@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item android:id="@+id/connect" android:icon="@android:drawable/ic_menu_send"
+            android:title="@string/Connecttext" />
+        <item android:id="@+id/readReg" android:icon="@android:drawable/ic_input_get"
+            android:title="@string/ReadRegtext" />
+        <item android:id="@+id/writeReg" android:icon="@android:drawable/ic_menu_edit"
+            android:title="@string/WriteRegtext" />
+        <item android:id="@+id/siteSurvey" android:icon="@android:drawable/ic_menu_compass"
+            android:title="@string/SiteSurveyText" />
+     </group>
+
+    <item android:title="@string/communicate">
+        <menu>
+            <item android:id="@+id/nav_share" android:icon="@android:drawable/ic_menu_share"
+                android:title="@string/share" />
+            <item android:id="@+id/nav_send" android:icon="@android:drawable/ic_menu_send"
+                android:title="@string/send" />
+        </menu>
+    </item>
+
+</menu>

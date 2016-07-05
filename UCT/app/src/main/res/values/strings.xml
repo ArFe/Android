@@ -1,0 +1,149 @@
+<resources>
+    <string name="app_name">DX80 UCT</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+
+    <string name="hex_digits_letter">0123456789abcdef</string>
+
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_comm">Register View</string>
+    <string name="msg">01030010001045c3</string>
+    <string name="title">DX80 Registers</string>
+
+    <integer-array name="tvValor">
+        <item>@id/tv_valor1</item>
+        <item>@id/tv_valor2</item>
+        <item>@id/tv_valor3</item>
+        <item>@id/tv_valor4</item>
+        <item>@id/tv_valor5</item>
+        <item>@id/tv_valor6</item>
+        <item>@id/tv_valor7</item>
+        <item>@id/tv_valor8</item>
+        <item>@id/tv_valor9</item>
+        <item>@id/tv_valor10</item>
+        <item>@id/tv_valor11</item>
+        <item>@id/tv_valor12</item>
+        <item>@id/tv_valor13</item>
+        <item>@id/tv_valor14</item>
+        <item>@id/tv_valor15</item>
+        <item>@id/tv_valor16</item>
+    </integer-array>
+
+    <string name="tv1">1</string>
+    <string name="tv2">2</string>
+    <string name="tv3">3</string>
+    <string name="tv4">4</string>
+    <string name="tv5">5</string>
+    <string name="tv6">6</string>
+    <string name="tv7">7</string>
+    <string name="tv8">8</string>
+    <string name="tv9">9</string>
+    <string name="tv10">10</string>
+    <string name="tv11">11</string>
+    <string name="tv12">12</string>
+    <string name="tv13">13</string>
+    <string name="tv14">14</string>
+    <string name="tv15">15</string>
+    <string name="tv16">16</string>
+    <string name="Node">Node</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Strings related to Settings -->
+    <string-array name="baud_rate">
+        <item>9600</item>
+        <item>19200</item>
+        <item>38400</item>
+    </string-array>
+
+    <string-array name="parity">
+        <item>none</item>
+        <item>odd</item>
+        <item>even</item>
+    </string-array>
+
+
+    <!-- Example General settings -->
+    <string name="pref_header_general">General</string>
+
+    <string name="pref_title_social_recommendations">Enable social recommendations</string>
+    <string name="pref_description_social_recommendations">Recommendations for people to contact
+        based on your message history
+    </string>
+
+    <string name="pref_title_display_name">Display name</string>
+    <string name="pref_default_display_name">John Smith</string>
+
+    <string name="pref_title_add_friends_to_messages">Add friends to messages</string>
+    <string-array name="pref_example_list_titles">
+        <item>Always</item>
+        <item>When possible</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_example_list_values">
+        <item>1</item>
+        <item>0</item>
+        <item>-1</item>
+    </string-array>
+
+    <!-- Example settings for Data & Sync -->
+    <string name="pref_header_data_sync">Data &amp; sync</string>
+
+    <string name="pref_title_sync_frequency">Sync frequency</string>
+    <string-array name="pref_sync_frequency_titles">
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>3 hours</item>
+        <item>6 hours</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_sync_frequency_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>180</item>
+        <item>360</item>
+        <item>-1</item>
+    </string-array>
+
+    <string name="pref_title_system_sync_settings">System sync settings</string>
+
+    <!-- Example settings for Notifications -->
+    <string name="pref_header_notifications">Notifications</string>
+
+    <string name="pref_title_new_message_notifications">New message notifications</string>
+
+    <string name="pref_title_ringtone">Ringtone</string>
+    <string name="pref_ringtone_silent">Silent</string>
+
+    <string name="pref_title_vibrate">Vibrate</string>
+    <string name="textAuto">Auto: Every</string>
+    <string name="textManual">Manual</string>
+    <string name="tvSeconds">seconds</string>
+    <string name="tvRead">Read</string>
+    <integer name="autoReadTime">2</integer>
+    <string name="title_activity_site_survey">SiteSurveyActivity</string>
+    <string name="ssTitle">Site Survey - Node</string>
+    <string name="Connecttext">Connect</string>
+    <string name="ReadRegtext">Read Registers</string>
+    <string name="WriteRegtext">Write Registers</string>
+    <string name="SiteSurveyText">Site Survey</string>
+    <string name="textStrong">Strong</string>
+    <string name="textGood">Good</string>
+    <string name="textWeak">Weak</string>
+    <string name="textMissed">Missed</string>
+    <string name="Device">Device:</string>
+    <string name="Write">Write</string>
+    <string name="headerImage">Header Image</string>
+    <string name="connect">Connect</string>
+    <string name="communicate">Communicate</string>
+    <string name="share">Share</string>
+    <string name="send">Send</string>
+    <string name="title_activity_main2">Main2Activity</string>
+    <string name="disconnect">Disconnect</string>
+</resources>

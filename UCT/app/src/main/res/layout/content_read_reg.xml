@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/rrView"
+    android:visibility="visible"
+    android:orientation="vertical"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context=".MainActivity">
+
+    <!--tools:showIn="@layout/app_bar_main"-->
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/title"
+        android:id="@+id/Titles"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_gravity="center_horizontal" />
+
+    <RadioGroup
+        android:id="@+id/rgMA"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tvRead"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:id="@+id/tvRead" />
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/textManual"
+            android:id="@+id/rbManual"
+            android:checked="true" />
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/textAuto"
+            android:id="@+id/rbAuto" />
+
+        <EditText
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:ems="10"
+            android:id="@+id/etAutoReadTime"
+            android:clickable="true"
+            android:textAlignment="center"
+            android:text="2"
+            android:maxLength="5"
+            android:enabled="true"
+            android:textSize="14sp"
+            android:layout_gravity="top|end"
+            android:selectAllOnFocus="true"
+            android:isScrollContainer="false" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tvSeconds"
+            android:id="@+id/tvSeconds"
+            android:layout_marginBottom="11dp" />
+
+    </RadioGroup>
+
+
+
+    <!--<HorizontalScrollView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:id="@+id/horizontalScrollView" >-->
+
+        <LinearLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:orientation="vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/tvLinearLayoutheader"
+                android:layout_gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/tv_Node"
+                    android:text="@string/Node"
+                    android:textStyle="bold"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_width="25dp"
+                    android:layout_height="wrap_content"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor1"
+                    android:text="@string/tv1"
+                    android:textStyle="bold"
+                    android:layout_width="42dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor2"
+                    android:layout_width="42dp"
+                    android:text="@string/tv2"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor3"
+                    android:layout_width="42dp"
+                    android:text="@string/tv3"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor4"
+                    android:layout_width="42dp"
+                    android:text="@string/tv4"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor5"
+                    android:layout_width="42dp"
+                    android:text="@string/tv5"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor6"
+                    android:layout_width="42dp"
+                    android:text="@string/tv6"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor7"
+                    android:layout_width="42dp"
+                    android:text="@string/tv7"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor8"
+                    android:layout_width="42dp"
+                    android:text="@string/tv8"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor9"
+                    android:layout_width="42dp"
+                    android:text="@string/tv9"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor10"
+                    android:layout_width="42dp"
+                    android:text="@string/tv10"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor11"
+                    android:layout_width="42dp"
+                    android:text="@string/tv11"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor12"
+                    android:layout_width="42dp"
+                    android:text="@string/tv12"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor13"
+                    android:layout_width="42dp"
+                    android:text="@string/tv13"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor14"
+                    android:layout_width="42dp"
+                    android:text="@string/tv14"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor15"
+                    android:layout_width="42dp"
+                    android:text="@string/tv15"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+                <TextView
+                    android:id="@+id/tv_valor16"
+                    android:layout_width="42dp"
+                    android:text="@string/tv16"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="10dp"
+                    android:textAlignment="center"/>
+
+            </LinearLayout>
+
+
+            <ListView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/ListView"
+                />
+
+        </LinearLayout>
+
+    <!--</HorizontalScrollView>-->
+
+</LinearLayout>
+

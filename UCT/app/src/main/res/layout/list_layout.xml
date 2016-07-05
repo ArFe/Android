@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:orientation="horizontal"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:id="@+id/tvLinearLayout">
+
+    <TextView
+        android:id="@+id/lv_id"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:layout_width="25dp"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/lv_valor1"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor2"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor3"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor4"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor5"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor6"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor7"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor8"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor9"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor10"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor11"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor12"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor13"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor14"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor15"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+    <TextView
+        android:id="@+id/lv_valor16"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:textAlignment="center"/>
+
+
+</LinearLayout>
+
