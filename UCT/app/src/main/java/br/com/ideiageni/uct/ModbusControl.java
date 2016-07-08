@@ -2,8 +2,6 @@ package br.com.ideiageni.uct;
 
 import android.os.AsyncTask;
 import android.os.Handler;
-import android.support.design.widget.Snackbar;
-import android.widget.Toast;
 
 /**
  * Created by ariel on 05/07/2016.
@@ -20,11 +18,11 @@ public class ModbusControl {
     private CommClass comm;
     private Modbus slave;
     private ReadThread rt;
-    private byte mCmd;
-    private byte mAddrHi;
-    private byte mAddrLo;
-    private byte mLenHi;
-    private byte mLenLo;
+    private byte mCmd = 90;
+    private byte mAddrHi  = 91;
+    private byte mAddrLo = 92;
+    private byte mLenHi = 93;
+    private byte mLenLo = 94;
     private byte[] sendData;
 
     private boolean busy = false;
@@ -33,25 +31,28 @@ public class ModbusControl {
 
     private int timeOutTime = 2000;
 
+    private Modbus.commBundle mBundle = new Modbus.commBundle(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo);
+    private Modbus.commBundle newBundle = new Modbus.commBundle(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo);
+
+    private OnScreenLog log = new OnScreenLog();
 
     public ModbusControl(CommClass iComm, Modbus iSlave) {
         slave = iSlave;
         comm = iComm;
     }
 
-    public boolean readHR (byte addrHi, byte addrLo, byte lenHi, byte lenLo){
+    public boolean readHR (Modbus.commBundle bundle){
         if(isDone()) {
+            mBundle = bundle;
             this.mCmd = Modbus.READMHR;
-            this.mAddrHi = addrHi;
-            this.mAddrLo = addrLo;
-            this.mLenHi = lenHi;
-            this.mLenLo = lenLo;
+            this.mAddrHi = bundle.addrHi;
+            this.mAddrLo = bundle.addrLo;
+            this.mLenHi = bundle.lenHi;
+            this.mLenLo = bundle.lenLo;
 
             setBusy(true);
             setDone(false);
             setStatus(READING);
-
-            slave.readSend(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo);
 
             sendData = slave.readSend(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo);
             comm.SendMessage(sendData);
@@ -65,7 +66,7 @@ public class ModbusControl {
     }
 
     // private class readThread  extends Thread
-    public class ReadThread extends AsyncTask<Integer, Integer, byte[]> {
+    public class ReadThread extends AsyncTask<Integer, Byte, byte[]> {
 
         @Override
         protected byte[] doInBackground(Integer... params) {
@@ -85,6 +86,8 @@ public class ModbusControl {
             int result = 0;
             if(status == READING) result = slave.readReceive(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo, readData);
             if(status == WRITING) result = slave.writeReceive(sendData, readData);
+            log.log(readData);
+            log.log("On Post Execute. Addr = " + mAddrLo);
 
             if(result == Modbus.NOERROR) setStatus(READY);
             else setStatus(ERROR);
@@ -93,6 +96,11 @@ public class ModbusControl {
             setDone(true);
             timerHandler.removeCallbacks(timeout);
         }
+    }
+
+    public void stopComm() {
+        timerHandler.removeCallbacks(timeout);
+
     }
 
     // runs without a timer by reposting this handler at the end of the runnable
@@ -144,5 +152,13 @@ public class ModbusControl {
 
     public void clearStatus() {
         this.status = 0;
+    }
+
+    public Modbus.commBundle getCommBundle() {
+        return mBundle;
+    }
+
+    public Modbus.commBundle getNewCommBundle() {
+        return newBundle;
     }
 }

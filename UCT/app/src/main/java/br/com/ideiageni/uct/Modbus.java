@@ -24,6 +24,7 @@ public class Modbus {
     private int[] HR;
 
     private int expectedBytes = 37;
+    private OnScreenLog log = new OnScreenLog();
 
     public Modbus(byte addr) {
         slaveAddr = addr;
@@ -51,8 +52,11 @@ public class Modbus {
         sendData[sendData.length-1] = (byte) (CRCCalc/256 & 0x00FF);
 
         int byteCount = (lenHi & 0xFF) * 256 + (lenLo & 0xFF);
-        int expectedBytes = 5 + byteCount;
+        int expectedBytes = 5 + 2*byteCount;
         setExpectedBytes(expectedBytes);
+
+        log.log(sendData);
+        log.log("Read Send. Addr = " + addrLo);
 
         return sendData;
     }
@@ -77,6 +81,8 @@ public class Modbus {
                             j++;
                         }
                         setHR(addr, readInt);
+                        log.log(readInt);
+                        log.log("Read Receive. Addr = " + addr);
                         return NOERROR;
                     } else return COUNTERROR;
                 } else return CMDERROR;
@@ -232,6 +238,32 @@ public class Modbus {
             0x8201, 0x42c0, 0x4380, 0x8341, 0x4100, 0x81c1, 0x8081, 0x4040
     };
 
+    public static class commBundle{
+        public byte cmd = 0;
+        public byte addrHi;
+        public byte addrLo;
+        public byte lenHi;
+        public byte lenLo;
+
+        public commBundle(byte iCmd, byte iAddrHi, byte iAddrLo, byte iLenHi, byte iLenLo){
+            cmd = iCmd;
+            addrHi = iAddrHi;
+            addrLo = iAddrLo;
+            lenHi = iLenHi;
+            lenLo = iLenLo;
+
+        }
+
+        public commBundle(byte iAddrHi, byte iAddrLo, byte iLenHi, byte iLenLo){
+            addrHi = iAddrHi;
+            addrLo = iAddrLo;
+            lenHi = iLenHi;
+            lenLo = iLenLo;
+
+        }
+
+
+    }
 
 
 }

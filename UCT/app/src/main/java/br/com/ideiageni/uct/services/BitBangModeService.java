@@ -61,7 +61,7 @@ public class BitBangModeService extends Service {
 	                  }
 	              }
 	          }
-	          // Stop the service using the startId, so that we don't stop
+	          // Stop the service using the startId, so that we don't onStop
 	          // the service in the middle of handling another job
 	          stopSelf(msg.arg1);
 	      }
