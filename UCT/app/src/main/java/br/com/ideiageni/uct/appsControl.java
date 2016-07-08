@@ -58,10 +58,15 @@ public class AppsControl {
             case HOLD:
                 app = getCurrentApp();
                 setNewApp(false);
-                if(app == mContext.getAppConnect()) mainState = CONNECT;
-                if(app == mContext.getAppReadReg()) mainState = READ_REGISTERS; log.log("New trasmission----------");
-                if(app == mContext.getAppWriteReg()) mainState = WRITE_REGISTERS;
-                if(app == mContext.getAppSiteSurvey()) mainState = SITE_SURVEY;
+                if(isRunning()) {
+                    if (app == mContext.getAppConnect()) mainState = CONNECT;
+                    if (app == mContext.getAppReadReg()) {
+                        mainState = READ_REGISTERS;
+                        log.log("New trasmission----------");
+                    }
+                    if (app == mContext.getAppWriteReg()) mainState = WRITE_REGISTERS;
+                    if (app == mContext.getAppSiteSurvey()) mainState = SITE_SURVEY;
+                }
                 break;
             case CONNECT:
                 mainState = HOLD;
@@ -209,9 +214,7 @@ public class AppsControl {
 
         @Override
         public void run() {
-            if(isRunning()) {
-                main();
-            }
+            main();
             timerHandler.postDelayed(mainRun, cycleTime);
         }
     };
