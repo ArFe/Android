@@ -91,21 +91,24 @@ public class Modbus {
     }
 
     public byte[] writeSend(byte cmd, byte addrHi, byte addrLo, byte lenHi, byte lenLo, byte[] data) {
-        byte [] sendData = new byte[data.length+8];
+        int sentBytes = data.length+9;
+        byte [] sendData = new byte[sentBytes];
         sendData[0] = slaveAddr;
         sendData[1] = cmd;
         sendData[2] = addrHi;
         sendData[3] = addrLo;
         sendData[4] = lenHi;
         sendData[5] = lenLo;
+        sendData[6] = (byte) (data.length & 0x00FF);
 
-
-        System.arraycopy(data,0,sendData,6,data.length);
+        System.arraycopy(data,0,sendData,7,data.length);
 
         int CRCCalc = Modbus.CRC16(sendData, sendData.length - 2);
 
         sendData[sendData.length-2] = (byte) (CRCCalc & 0x00FF);
         sendData[sendData.length-1] = (byte) (CRCCalc/256 & 0x00FF);
+
+        setExpectedBytes(8);
 
         return sendData;
 
@@ -120,8 +123,10 @@ public class Modbus {
         if (CRCCalc == CRCRec) {
             if (slaveAddr == dataReceived[0]) {
                 if (dataSent[1] == dataReceived[1]) {
-                    if(dataSent == dataReceived) return NOERROR;
-                    else return ERROR;
+                    for(int i = 2; i< 6; i++) {
+                        if(dataSent[i] != dataReceived[i]) return ERROR;
+                    }
+                    return NOERROR;
                 } else return CMDERROR;
             } else return SLAVEERROR;
         } else return CRCERROR;

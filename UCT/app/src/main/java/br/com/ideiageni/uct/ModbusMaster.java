@@ -6,7 +6,7 @@ import android.os.Handler;
 /**
  * Created by ariel on 05/07/2016.
  */
-public class ModbusControl {
+public class ModbusMaster {
 
     static int IDLE = 0;
     static int READY = 1;
@@ -36,7 +36,7 @@ public class ModbusControl {
 
     private OnScreenLog log = new OnScreenLog();
 
-    public ModbusControl(CommClass iComm, Modbus iSlave) {
+    public ModbusMaster(CommClass iComm, Modbus iSlave) {
         slave = iSlave;
         comm = iComm;
     }
@@ -65,6 +65,31 @@ public class ModbusControl {
 
     }
 
+
+    public boolean writeHR (Modbus.commBundle bundle, byte[] data){
+        if(isDone()) {
+            mBundle = bundle;
+            this.mCmd = Modbus.WRITEMHR;
+            this.mAddrHi = bundle.addrHi;
+            this.mAddrLo = bundle.addrLo;
+            this.mLenHi = bundle.lenHi;
+            this.mLenLo = bundle.lenLo;
+
+            setBusy(true);
+            setDone(false);
+            setStatus(WRITING);
+
+            sendData = slave.writeSend(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo, data);
+            comm.SendMessage(sendData);
+            log.log(mCmd + " " + mAddrHi  + " " +  mAddrLo + " " +  mLenHi + " " +  mLenLo + " " +  data[1]  + " " + data[0]);
+            rt = new ReadThread();
+            rt.execute(slave.getExpectedBytes());
+            timerHandler.postDelayed(timeout, getTimeOutTime());
+
+            return true;
+        } else return false;
+
+    }
     // private class readThread  extends Thread
     public class ReadThread extends AsyncTask<Integer, Byte, byte[]> {
 
@@ -100,18 +125,29 @@ public class ModbusControl {
 
     public void stopComm() {
         timerHandler.removeCallbacks(timeout);
-
+        timerHandler.removeCallbacks(postStatus);
     }
 
     // runs without a timer by reposting this handler at the end of the runnable
     Handler timerHandler = new Handler();
-
     Runnable timeout = new Runnable() {
 
         @Override
         public void run() {
             rt.cancel(true);
             setStatus(TIMEOUT);
+            setBusy(false);
+            setDone(true);
+            timerHandler.removeCallbacks(postStatus);
+        }
+    };
+    Runnable postStatus = new Runnable() {
+
+        @Override
+        public void run() {
+            int iAvailable = comm.getAvailable();
+            log.log("iAvailable " + iAvailable + " expectedBytes " + slave.getExpectedBytes());
+            timerHandler.postDelayed(postStatus, 1000);
         }
     };
 

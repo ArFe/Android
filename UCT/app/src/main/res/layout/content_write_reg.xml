@@ -79,6 +79,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/cbIO9"
+                    android:tag="9"
                     android:layout_column="1"
                     android:checked="false" />
 
@@ -88,6 +89,7 @@
                     android:inputType="number"
                     android:ems="10"
                     android:id="@+id/etIO09"
+                    android:tag="9"
                     android:layout_column="2"
 
                     android:text="0"
@@ -115,6 +117,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/cbI13"
+                    android:tag="13"
                     android:layout_column="5"
                     android:checked="false" />
 
@@ -124,6 +127,7 @@
                     android:inputType="number"
                     android:ems="10"
                     android:id="@+id/etIO13"
+                    android:tag="13"
                     android:layout_column="6"
                     android:text="0"
                     android:maxLength="5"
@@ -152,6 +156,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/cbI10"
+                    android:tag="10"
                     android:layout_column="1"
                     android:checked="false" />
 
@@ -161,6 +166,7 @@
                     android:inputType="number"
                     android:ems="10"
                     android:id="@+id/etIO10"
+                    android:tag="10"
                     android:layout_column="2"
                     android:text="0"
                     android:maxLength="5"
@@ -183,6 +189,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/cbI14"
+                    android:tag="14"
                     android:layout_column="5"
                     android:checked="false" />
 
@@ -192,6 +199,7 @@
                     android:inputType="number"
                     android:ems="10"
                     android:id="@+id/etIO14"
+                    android:tag="14"
                     android:layout_column="6"
 
                     android:text="0"
@@ -220,6 +228,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/cbI11"
+                    android:tag="11"
                     android:layout_column="1"
                     android:checked="false" />
 
@@ -229,8 +238,8 @@
                     android:inputType="number"
                     android:ems="10"
                     android:id="@+id/etIO11"
+                    android:tag="11"
                     android:layout_column="2"
-
                     android:text="0"
                     android:maxLength="5"
                     android:clickable="true"
@@ -251,6 +260,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/cbI15"
+                    android:tag="15"
                     android:layout_column="5"
                     android:checked="false" />
 
@@ -260,8 +270,8 @@
                     android:inputType="number"
                     android:ems="10"
                     android:id="@+id/etIO15"
+                    android:tag="15"
                     android:layout_column="6"
-
                     android:text="0"
                     android:maxLength="5"
                     android:clickable="true"
@@ -287,6 +297,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/cbI12"
+                    android:tag="12"
                     android:layout_column="1"
                     android:checked="false" />
 
@@ -296,8 +307,8 @@
                     android:inputType="number"
                     android:ems="10"
                     android:id="@+id/etIO12"
+                    android:tag="12"
                     android:layout_column="2"
-
                     android:text="0"
                     android:maxLength="5"
                     android:clickable="true"
@@ -317,6 +328,7 @@
                 <CheckBox
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:tag="16"
                     android:id="@+id/cbI16"
                     android:layout_column="5"
                     android:checked="false" />
@@ -327,8 +339,8 @@
                     android:inputType="number"
                     android:ems="10"
                     android:id="@+id/etIO16"
+                    android:tag="16"
                     android:layout_column="6"
-
                     android:text="0"
                     android:maxLength="5"
                     android:clickable="true"

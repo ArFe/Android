@@ -1,7 +1,6 @@
 package br.com.ideiageni.uct;
 
 import android.app.Activity;
-import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -19,9 +18,9 @@ public class OnScreenLog {
 
     public OnScreenLog(){}
 
-    public OnScreenLog(Activity activity, Context context, int ViewID){
-        tvLog = new TextView(context);
-        tvLog.setText("Log is working");
+    public OnScreenLog(Activity activity, int ViewID){
+        tvLog = new TextView(activity.getApplicationContext());
+        maintainLog("Log is working");
         tvLog.setLayoutParams(new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT));
@@ -78,9 +77,13 @@ public class OnScreenLog {
     private void maintainLog(String newText){
         String logText = "";
         if(logCount<logCountMax) logCount++;
-        logs[logCount-1] = newText;
+        for(int i=logCount-1; i>0; i--){
+            logs[i] = logs[i-1];
+        }
+        logs[0] = newText;
         for(int i=0; i<logCount; i++){
-            logText+=logs[i]+ System.getProperty("line.separator");
+            if(i<logCount-1) logText+=logs[i]+ System.getProperty("line.separator");
+            else logText+=logs[i];
         }
         tvLog.setText(logText);
     }

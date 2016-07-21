@@ -9,6 +9,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v7.widget.AppCompatCheckBox;
+import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.AppCompatTextView;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -26,13 +28,15 @@ import android.view.MenuItem;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
-import android.widget.RelativeLayout;
 import android.widget.Spinner;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
@@ -63,10 +67,13 @@ public class MainActivity extends AppCompatActivity
     private int numRegisters = numReg * numNodes+1;
     public DX80Nodes nodes = new DX80Nodes(numNodes);
     public Modbus slave1 = new Modbus(mSlave, numRegisters);
-    public ModbusControl master;
+    public ModbusMaster master;
     public AppsControl control;
     private byte wrNode = 0;
     private byte ssNode = 0;
+    private int[] writeReg = new int[numReg];
+    private boolean[] isWriteRegEnable = new boolean[numReg];
+    private boolean isSsEnable = false;
 
     private DX80Adapter arrayAdapter;
 
@@ -130,9 +137,9 @@ public class MainActivity extends AppCompatActivity
 
         // Insert Connection Screen
         comm = new CommClass(getApplicationContext());
-        master = new ModbusControl(comm, slave1);
+        master = new ModbusMaster(comm, slave1);
         setCNscreen();
-        log = new OnScreenLog(this, this.getApplicationContext(), R.id.mnView);
+        log = new OnScreenLog(this, R.id.mnView);
         // Enable GW reading
         nodes.setReadEnable(GW, true);
         // Check whether we're recreating a previously destroyed instance
@@ -156,8 +163,8 @@ public class MainActivity extends AppCompatActivity
                                 .setAction("Action", null).show();
                         comm.ConfigDev();
                     } else {
-                        control.setRunning(!control.isRunning());
-                        control.onStart();
+                        control.setRunningTrue();
+                        setSsEnable(!isSsEnable());
                         Snackbar.make(view, "Running is " + control.isRunning(), Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();                   }
                 } else {
@@ -324,11 +331,10 @@ public class MainActivity extends AppCompatActivity
                 btnConnect.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        control.setRunning(!control.isRunning());
-                        control.onStart();
+                        control.setRunningTrue();
                         if (comm == null) {
                             comm = new CommClass(getApplicationContext());
-                            master = new ModbusControl(comm, slave1);
+                            master = new ModbusMaster(comm, slave1);
                         }
 
                         if (!comm.getUartConfigured()) {
@@ -489,8 +495,65 @@ public class MainActivity extends AppCompatActivity
                 }
             });
 
+            AppCompatCheckBox[] cb = new AppCompatCheckBox[numReg];
+            AppCompatEditText[] et = new AppCompatEditText[numReg];
+            TableLayout tl = (TableLayout) viewFlipper.getChildAt(appWriteReg).findViewById(R.id.tableLayout);
+            int indexCB = 0;
+            int indexET = 0;
+            for (int i = 0; i < tl.getChildCount(); i++) {
+                if (tl.getChildAt(i).getClass() == TableRow.class) {
+                    TableRow tr = (TableRow) tl.getChildAt(i);
+                    for (int j = 0; j < tr.getChildCount(); j++) {
+                        if (tr.getChildAt(j).getClass() == AppCompatCheckBox.class) {
+                            cb[indexCB] = (AppCompatCheckBox) tr.getChildAt(j);
+                            cb[indexCB].setTag(Integer.valueOf((String)cb[indexCB].getTag())-1);
+                            indexCB++;
+                        } else if (tr.getChildAt(j).getClass() == AppCompatEditText.class) {
+                            et[indexET] = (AppCompatEditText) tr.getChildAt(j);
+                            et[indexET].setTag(Integer.valueOf((String)et[indexET].getTag())-1);
+                            indexET++;
+                        }
+
+                    }
+                }
+            }
+
+            for(int i=0;i<numReg; i++){
+                if(cb[i] != null) cb[i].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        buttonView.getTag();
+                        isWriteRegEnable[(int)buttonView.getTag()] = isChecked;
+                        log.log("status:" + isChecked + " Tag: " + (int)buttonView.getTag());
+                    }
+                });
+                if(et[i] != null) et[i].addTextChangedListener(new ArrayTextWatcher((int) et[i].getTag()));
+            }
             wrScreen = true;
         }
+    }
+
+    public class ArrayTextWatcher implements TextWatcher {
+        private int mIndex = 0;
+        public ArrayTextWatcher(int index) {
+            this.mIndex = index;
+        }
+
+        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+
+        @Override
+        public void afterTextChanged(Editable s) {
+            if (s.toString().length() > 0) {
+                try {
+                    setWriteReg(Integer.parseInt(s.toString()), mIndex);
+                    log.log(mIndex + " - " + Integer.parseInt(s.toString()));
+                } catch (Exception e){
+                    log.log("Not interger. " + e.toString());
+                }
+            }
+        }
+
     }
 
     // Ajusta a tela de Site Survey
@@ -555,7 +618,6 @@ public class MainActivity extends AppCompatActivity
         }
    }
 
-
     public void updateRRScreen () {
         //for(int i=0;i<numNodes;i++) nodes[i].setValues(Arrays.copyOfRange(modbusArray,i*16+1,(i+1)*16));
     }
@@ -597,6 +659,7 @@ public class MainActivity extends AppCompatActivity
 
         viewFlipper.setDisplayedChild(this.mCurrentApp);
         control.setCurrentApp(this.mCurrentApp);
+        setSsEnable(false);
 
         //log.log(System.getProperty("line.separator") + "App " + this.mCurrentApp);
         //tvLog.append(System.getProperty("line.separator") + "App " + this.mCurrentApp);
@@ -678,8 +741,33 @@ public class MainActivity extends AppCompatActivity
         this.ssNode = ssNode;
     }
 
+
     public void notifyDataSetChanged () {
         arrayAdapter.notifyDataSetChanged();
+    }
+
+    public boolean getIsWriteRegEnable(int index) {
+        return isWriteRegEnable[index];
+    }
+
+    public void setIsWriteRegEnable(boolean isWriteRegEnable, int index) {
+        this.isWriteRegEnable[index] = isWriteRegEnable;
+    }
+
+    public int getWriteReg(int index) {
+        return writeReg[index];
+    }
+
+    public void setWriteReg(int writeReg, int index) {
+        this.writeReg[index] = writeReg;
+    }
+
+    public boolean isSsEnable() {
+        return isSsEnable;
+    }
+
+    public void setSsEnable(boolean ssEnable) {
+        isSsEnable = ssEnable;
     }
 
     /***********

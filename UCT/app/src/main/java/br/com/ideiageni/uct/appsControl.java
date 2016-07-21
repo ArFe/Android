@@ -2,8 +2,6 @@ package br.com.ideiageni.uct;
 
 import android.os.Handler;
 import android.support.design.widget.Snackbar;
-import android.view.View;
-import android.widget.Toast;
 
 /**
  * Created by ariel on 05/07/2016.
@@ -20,21 +18,30 @@ public class AppsControl {
     private static final int WAIT_RETURN = 7;
     private static final int WAIT_AUTO_READ = 8;
     private static final int STOP = 9;
+    private static final int START_SS = 10;
+    private static final int STOP_SS = 11;
+    private static final int WAIT_SS = 12;
+    private static final int READ_SS = 13;
+    private static final int WAIT_START = 14;
+    private static final int WAIT_READ_SS = 15;
     private static final int TIMEOUT = 99;
 
-    private final int cycleTime = 200;
-    private final int reportTime = 5000;
+    private int cycleTime = 100;
+    private int reportTime = 1000;
+    private int timeoutTime = 10000;
 
     private static final byte ssCmd = 32;
+    static int ssAddr = 14;
 
     private boolean ssEnable = false;
     private int currentApp = 999;
 
     private int mainState = 0;
     private int appState = 0;
-    private MainActivity mContext;
+    private MainActivity mainActivity;
 
     private byte node = 0;
+    private byte wrReg = 0;
     private final byte mLenHi = 0;
     private byte mLenLo = 16;
     private boolean autoRead = false;
@@ -43,11 +50,14 @@ public class AppsControl {
     private boolean scan = false;
     private boolean newApp = false;
     private boolean running = false;
+    private boolean timeout = false;
+
+    private int counter = 0;
 
     private OnScreenLog log = new OnScreenLog();
 
      public AppsControl (MainActivity context){
-        this.mContext = context;
+        this.mainActivity = context;
          onStart();
     }
 
@@ -56,39 +66,56 @@ public class AppsControl {
 
         switch (mainState) {
             case HOLD:
+                if(isRunning()) mainState = START;
+                timerHandler.removeCallbacks(rTimeout);
+                break;
+
+            case START:
                 app = getCurrentApp();
                 setNewApp(false);
-                if(isRunning()) {
-                    if (app == mContext.getAppConnect()) mainState = CONNECT;
-                    if (app == mContext.getAppReadReg()) {
-                        mainState = READ_REGISTERS;
-                        log.log("New trasmission----------");
-                    }
-                    if (app == mContext.getAppWriteReg()) mainState = WRITE_REGISTERS;
-                    if (app == mContext.getAppSiteSurvey()) mainState = SITE_SURVEY;
-                }
+                if (app == mainActivity.getAppConnect()) mainState = CONNECT;
+                else if (app == mainActivity.getAppReadReg()) mainState = READ_REGISTERS;
+                else if (app == mainActivity.getAppWriteReg()) mainState = WRITE_REGISTERS;
+                else if (app == mainActivity.getAppSiteSurvey()) mainState = SITE_SURVEY;
+                timerHandler.postDelayed(rTimeout, timeoutTime);
                 break;
+
             case CONNECT:
-                mainState = HOLD;
+                mainState = STOP;
+                if(timeout) mainState = TIMEOUT;
                 break;
 
             case READ_REGISTERS:
-                if (appRR()) {
-                    mainState = HOLD;
-                    setRunning(false);
-                }
+                if (appRR()) mainState = STOP;
+                if(timeout) mainState = TIMEOUT;
                 break;
 
             case WRITE_REGISTERS:
-                mainState = HOLD;
+                if (appWR()) mainState = STOP;
+                if(timeout) mainState = TIMEOUT;
                 break;
 
             case SITE_SURVEY:
+                if (appSS()) mainState = STOP;
+                if(timeout) mainState = TIMEOUT;
+                break;
+
+            case STOP:
                 mainState = HOLD;
+                setRunning(false);
+                break;
+
+            case TIMEOUT:
+                mainState = HOLD;
+                setRunning(false);
+                timeout = false;
+                onStop();
+                log.log("Timeout");
                 break;
 
             default:
                 mainState = HOLD;
+                setRunning(false);
         }
 
     }
@@ -99,13 +126,13 @@ public class AppsControl {
             case START:
                 node = 0;
                 int readNodes = 0;
-                for (int i = 0; i < mContext.getNumNodes(); i++) {
-                    if (mContext.nodes.isReadEnable(i)) readNodes++;
+                for (int i = 0; i < mainActivity.getNumNodes(); i++) {
+                    if (mainActivity.nodes.isReadEnable(i)) readNodes++;
                 }
                 if (readNodes > 0) appState = RUN;
                 else {
                     appState = STOP;
-                    Snackbar.make(mContext.coordinatorLayoutView, "Select at least one Node!"
+                    Snackbar.make(mainActivity.coordinatorLayoutView, "Select at least one Node!"
                             + System.getProperty("line.separator")
                             + "Long click on the Nodes you want to read.", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
@@ -114,15 +141,16 @@ public class AppsControl {
                 break;
 
             case RUN:
-                for (byte i = node; i <= mContext.getNumNodes(); i++) {
-                    if (i < mContext.getNumNodes()) {
-                        if (mContext.nodes.isReadEnable(i)) {
+                for (byte i = node; i <= mainActivity.getNumNodes(); i++) {
+                    if (i < mainActivity.getNumNodes()) {
+                        if (mainActivity.nodes.isReadEnable(i)) {
                             node = i;
+                            mLenLo = 16;
                             int addr = node * MainActivity.numReg;
                             byte mAddrLo = (byte) (addr & 0x00FF);
                             byte mAddrHi = (byte) (addr / 256 & 0x00FF);
                             log.log("New Read. Addr = " + mAddrLo);
-                            mContext.master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
+                            mainActivity.master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
                             appState = WAIT_RETURN;
                             break;
                         }
@@ -137,39 +165,225 @@ public class AppsControl {
                 break;
 
             case WAIT_RETURN:
-                if(mContext.master.isDone()) {
-                    if(mContext.master.getStatus()==ModbusControl.ERROR){
-                        mContext.master.clearStatus();
-                        Snackbar.make(mContext.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
+                if(mainActivity.master.isDone()) {
+                    if(mainActivity.master.getStatus()== ModbusMaster.ERROR){
+                        mainActivity.master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
-                } else if(mContext.master.getStatus()==ModbusControl.TIMEOUT){
-                        mContext.master.clearStatus();
-                    Snackbar.make(mContext.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
-                            .setAction("Action", null).show();
+                    } else if(mainActivity.master.getStatus()== ModbusMaster.TIMEOUT){
+                        mainActivity.master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
                     } else {// Case not error, jump to next node
                         node++;
                     }
-                    mContext.notifyDataSetChanged();
+                    mainActivity.notifyDataSetChanged();
                     if(isNewApp()) appState = STOP;
                     else appState = RUN;
-
-                } else timerHandler.postDelayed(mainRun, cycleTime);
+                } else if(timeout) appState = START;
                 break;
 
             case WAIT_AUTO_READ:
-                if(mContext.master.isDone()) {
-                    mContext.notifyDataSetChanged();
+                if(mainActivity.master.isDone()) {
+                    mainActivity.notifyDataSetChanged();
                     if(isNewApp()) appState = STOP;
                     else if(isScan()) {
                         appState = START;
                         setScan(false);
+                        timerHandler.removeCallbacks(rTimeout);
+                        timerHandler.postDelayed(rTimeout, timeoutTime);
                     }
-                }
+                } else if(timeout) appState = START;
                 break;
 
             case STOP:
-                Snackbar.make(mContext.coordinatorLayoutView, "Long click on the Nodes you want to read.", Snackbar.LENGTH_SHORT)
+                Snackbar.make(mainActivity.coordinatorLayoutView, "Long click on the Nodes you want to read.", Snackbar.LENGTH_SHORT)
                         .setAction("Action", null).show();
+                appState = START;
+                result = true;
+                break;
+
+            default:
+                appState = START;
+        }
+
+        return result;
+    }
+
+    private boolean appWR(){
+        boolean result = false;
+        switch (appState) {
+            case START:
+                node = mainActivity.getWrNode();
+                wrReg = 0;
+                int writeRegs = 0;
+                for (int i = 0; i < MainActivity.numReg; i++) {
+                    if (mainActivity.getIsWriteRegEnable(i)) writeRegs++;
+                }
+                if (writeRegs > 0) appState = RUN;
+                else {
+                    appState = STOP;
+                    Snackbar.make(mainActivity.coordinatorLayoutView,
+                            "Select at least one Register to Write!", Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
+                }
+
+                break;
+
+            case RUN:
+                for (byte i = wrReg; i <= MainActivity.numReg; i++) {
+                    if (i < MainActivity.numReg) {
+                        if (mainActivity.getIsWriteRegEnable(i)) {
+                            wrReg = i;
+                            int addr = node * MainActivity.numReg + wrReg;
+                            byte mAddrLo = (byte) (addr & 0x00FF);
+                            byte mAddrHi = (byte) (addr / 256 & 0x00FF);
+                            mLenLo = 1;
+                            log.log("New Write. reg = " + mAddrLo + " data = " + mainActivity.getWriteReg(i) + " i = " + i);
+                            byte dataLo = (byte) (mainActivity.getWriteReg(i) & 0x00FF);
+                            byte dataHi = (byte) (mainActivity.getWriteReg(i) / 256 & 0x00FF);
+                            byte[] data = {dataHi, dataLo};
+                            mainActivity.master.writeHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo), data);
+                            appState = WAIT_RETURN;
+                            break;
+                        }
+                    } else {
+                        log.log("Stop. i = " + i);
+                        appState = STOP;
+                    }
+
+                }
+                break;
+
+            case WAIT_RETURN:
+                if(mainActivity.master.isDone()) {
+                    if(mainActivity.master.getStatus()== ModbusMaster.ERROR){
+                        mainActivity.master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    } else if(mainActivity.master.getStatus()== ModbusMaster.TIMEOUT){
+                        mainActivity.master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    } else {// Case not error, jump to next Register
+                        wrReg++;
+                    }
+                    if(isNewApp()) appState = STOP;
+                    else appState = RUN;
+                } else if(timeout) appState = START;
+                break;
+
+            case STOP:
+                appState = START;
+                result = true;
+                break;
+
+            default:
+                appState = START;
+        }
+
+        return result;
+    }
+
+    private boolean appSS(){
+        boolean result = false;
+        int addr = ssAddr;
+        byte mAddrLo = (byte) (addr & 0x00FF);
+        byte mAddrHi = (byte) (addr / 256 & 0x00FF);
+        byte[] data;
+        log.log(appState);
+
+        switch (appState) {
+            case START:
+                node = mainActivity.getSsNode();
+                appState = START_SS;
+                break;
+
+            case START_SS:
+                addr = ssAddr;
+                mAddrLo = (byte) (addr & 0x00FF);
+                mAddrHi = (byte) (addr / 256 & 0x00FF);
+                mLenLo = 1; // Command + node address
+                data = new byte[] {ssCmd,node};
+                mainActivity.master.writeHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo), data);
+                appState = WAIT_START;
+                break;
+
+            case WAIT_START:
+                if(mainActivity.master.isDone()) {
+                    if(mainActivity.master.getStatus()== ModbusMaster.ERROR){
+                        appState = START;
+                        mainActivity.master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    } else if(mainActivity.master.getStatus()== ModbusMaster.TIMEOUT){
+                        appState = START;
+                        mainActivity.master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    } else appState = READ_SS;
+                    if(isNewApp()) appState = STOP_SS;
+                } else if(timeout) appState = START;
+                break;
+
+            case READ_SS:
+                addr = 0;
+                mAddrLo = (byte) (addr & 0x00FF);
+                mAddrHi = (byte) (addr / 256 & 0x00FF);
+                mLenLo = 16;
+                log.log("New Read. Addr = " + mAddrLo);
+                mainActivity.master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
+                appState = WAIT_READ_SS;
+                break;
+
+            case WAIT_READ_SS:
+                if(mainActivity.master.isDone()) {
+                    if(mainActivity.master.getStatus()== ModbusMaster.ERROR){
+                        appState = READ_SS;
+                        mainActivity.master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    } else if(mainActivity.master.getStatus()== ModbusMaster.TIMEOUT){
+                        appState = READ_SS;
+                        mainActivity.master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    } else if(!mainActivity.isSsEnable()) appState = STOP_SS;
+                    else {
+                        appState = READ_SS;
+                        mainActivity.updateSSScreen();
+                        timerHandler.removeCallbacks(rTimeout);
+                        timerHandler.postDelayed(rTimeout, timeoutTime);
+                    }
+                    if(isNewApp()) appState = STOP_SS;
+                } else if(timeout) appState = START;
+                break;
+
+            case STOP_SS:
+                addr = ssAddr;
+                mAddrLo = (byte) (addr & 0x00FF);
+                mAddrHi = (byte) (addr / 256 & 0x00FF);
+                mLenLo = 1; // Command + node address
+                data = new byte[] {ssCmd,0};
+                mainActivity.master.writeHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo), data);
+                appState = WAIT_RETURN;
+                break;
+
+            case WAIT_RETURN:
+                if(mainActivity.master.isDone()) {
+                    if(mainActivity.master.getStatus()== ModbusMaster.ERROR){
+                        mainActivity.master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    } else if(mainActivity.master.getStatus()== ModbusMaster.TIMEOUT){
+                        mainActivity.master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    } else appState = STOP;
+                } else if(timeout) appState = STOP_SS;
+                break;
+
+            case STOP:
                 appState = START;
                 result = true;
                 break;
@@ -215,7 +429,16 @@ public class AppsControl {
         @Override
         public void run() {
             main();
+            //log.log("Main State = " + mainState + " App State = " + appState);
             timerHandler.postDelayed(mainRun, cycleTime);
+        }
+    };
+
+    Runnable rTimeout = new Runnable() {
+
+        @Override
+        public void run() {
+            timeout = true;
         }
     };
 
@@ -231,10 +454,12 @@ public class AppsControl {
 
         @Override
         public void run() {
+            counter++;
             if(isRunning()&&false) {
-                Snackbar.make(mContext.coordinatorLayoutView, "Main State = " + mainState + " App State = " + appState, Snackbar.LENGTH_SHORT)
+                Snackbar.make(mainActivity.coordinatorLayoutView, "Main State = " + mainState + " App State = " + appState, Snackbar.LENGTH_SHORT)
                         .setAction("Action", null).show();
             }
+            timerHandler.postDelayed(showStatus, reportTime);
         }
     };
 
@@ -303,7 +528,27 @@ public class AppsControl {
         return running;
     }
 
-    public void setRunning(boolean running) {
+    private void setRunning(boolean running) {
         this.running = running;
+    }
+
+    public void setRunningTrue() {
+        this.running = true;
+    }
+
+    public int getCycleTime() {
+        return cycleTime;
+    }
+
+    public void setCycleTime(int cycleTime) {
+        this.cycleTime = cycleTime;
+    }
+
+    public int getTimeoutTime() {
+        return timeoutTime;
+    }
+
+    public void setTimeoutTime(int timeoutTime) {
+        this.timeoutTime = timeoutTime;
     }
 }
