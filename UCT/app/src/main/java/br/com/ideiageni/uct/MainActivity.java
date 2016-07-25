@@ -44,6 +44,9 @@ import android.widget.ViewFlipper;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.series.DataPoint;
+import com.jjoe64.graphview.series.LineGraphSeries;
 
 import java.util.ArrayList;
 
@@ -71,6 +74,7 @@ public class MainActivity extends AppCompatActivity
     public AppsControl control;
     private byte wrNode = 0;
     private byte ssNode = 0;
+    private byte vtNode = 0;
     private int[] writeReg = new int[numReg];
     private boolean[] isWriteRegEnable = new boolean[numReg];
     private boolean isSsEnable = false;
@@ -83,11 +87,13 @@ public class MainActivity extends AppCompatActivity
     private boolean rrScreen = false;
     private boolean wrScreen = false;
     private boolean ssScreen = false;
+    private boolean vtScreen = false;
 
     private int appConnect = 0;
-    private int appReadReg = 1;
-    private int appWriteReg = 2;
-    private int appSiteSurvey = 3;
+    private int appReadReg = 999;
+    private int appWriteReg = 999;
+    private int appSiteSurvey = 999;
+    private int appVibTemp = 999;
     private int mCurrentApp = 0;
     private int[] backControlArray= new int[100];
     private int backControl = 0;
@@ -112,6 +118,8 @@ public class MainActivity extends AppCompatActivity
     public View coordinatorLayoutView;
     private FloatingActionButton fab;
     private OnScreenLog log;
+    GraphView graph;
+    private int graphCnt;
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -289,11 +297,17 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.connect) {
             setCurrentApp(appConnect, false);
         } else if (id == R.id.readReg) {
+            if(!rrScreen) setRRscreen();
             setCurrentApp(appReadReg, false);
         } else if (id == R.id.writeReg) {
+            if(!wrScreen) setWRscreen();
             setCurrentApp(appWriteReg, false);
         } else if (id == R.id.siteSurvey) {
+            if(!ssScreen) setSSscreen();
             setCurrentApp(appSiteSurvey, false);
+        } else if (id == R.id.vibTemp) {
+            if(!vtScreen) setVTscreen();
+            setCurrentApp(appVibTemp, false);
         } else if (id == R.id.nav_share) {
             log.setLogVisible(true);
         } else if (id == R.id.nav_send) {
@@ -618,6 +632,93 @@ public class MainActivity extends AppCompatActivity
         }
    }
 
+    // Ajusta a tela de Vibração e Temperatura
+    public void setVTscreen() {
+        View vibTemp ;
+        EditText etAutoRead;
+
+        // Se tela Read Registers não está ajustada
+        if (!vtScreen) {
+            LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+            vibTemp = inflater.inflate(R.layout.content_vt, viewFlipper, false);
+            appVibTemp = viewFlipper.getChildCount();
+            viewFlipper.addView(vibTemp, appVibTemp);
+            log.log("App Vib Temp: " + appVibTemp);
+
+            graph = (GraphView) viewFlipper.getChildAt(appVibTemp).findViewById(R.id.vtGraph);
+            LineGraphSeries<DataPoint> series = new LineGraphSeries<>(new DataPoint[] {
+                    new DataPoint(0, 1),
+                    new DataPoint(1, 5),
+                    new DataPoint(2, 3),
+                    new DataPoint(3, 2),
+                    new DataPoint(4, 6)
+            });
+            graph.addSeries(series);
+            graphCnt = 5;
+            rbAuto = (RadioButton) viewFlipper.getChildAt(appVibTemp).findViewById(R.id.rbAuto);
+            rbAuto.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    control.setAutoRead(rbAuto.isChecked());
+                    Snackbar.make(view, "Auto read is " + control.isAutoRead() + ". Auto read time is " +
+                            control.getAutoReadTime() / 1000 + " seconds", Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
+                }
+            });
+
+            rbManual = (RadioButton) viewFlipper.getChildAt(appVibTemp).findViewById(R.id.rbManual);
+            rbManual.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    control.setAutoRead(!rbManual.isChecked());
+                    Snackbar.make(view, "Auto read is " + control.isAutoRead() + ".", Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
+                }
+            });
+
+            etAutoRead = (EditText) viewFlipper.getChildAt(appVibTemp).findViewById(R.id.etAutoReadTime);
+            String autoReadText = String.valueOf(control.getAutoReadTime() / 1000);
+            etAutoRead.setText(autoReadText);
+            etAutoRead.addTextChangedListener(new TextWatcher() {
+
+                public void afterTextChanged(Editable s) {
+                    // you can call or do what you want with your EditText here
+                    if (s.toString().length() > 0)
+                        control.setAutoReadTime(Integer.parseInt(s.toString()) * 1000);
+                }
+
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                }
+            });
+
+
+            ArrayList<String> nodeNums = new ArrayList<>();
+            for (int i = 1; i <= numNodes; i++) nodeNums.add(String.valueOf(i));
+            Spinner spNode = (Spinner) viewFlipper.getChildAt(appVibTemp).findViewById(R.id.nodeNumVT);
+            ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.my_spinner, nodeNums); //selected item will look like a spinner set from XML
+            spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spNode.setAdapter(spinnerArrayAdapter);
+
+            spNode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> adapter, View v, int position, long arg3) {
+                    setVtNode(Byte.parseByte((String) adapter.getItemAtPosition(position)));
+                    Toast.makeText(getApplicationContext(), "VT node: " + getVtNode(), Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parentView) {
+                    // your code here
+                }
+            });
+            vtScreen = true;
+        }
+    }
+
     public void updateRRScreen () {
         //for(int i=0;i<numNodes;i++) nodes[i].setValues(Arrays.copyOfRange(modbusArray,i*16+1,(i+1)*16));
     }
@@ -649,13 +750,21 @@ public class MainActivity extends AppCompatActivity
 
     }
 
+    public void updateVTScreen () {
+        graph = (GraphView) viewFlipper.getChildAt(appVibTemp).findViewById(R.id.vtGraph);
+        LineGraphSeries<DataPoint> series = new LineGraphSeries<>(new DataPoint[] {
+                new DataPoint(graphCnt, slave1.getHR(getVtNode()*16+2))
+        });
+        graph.addSeries(series);
+        graph.onDataChanged(false, false);
+        graphCnt++;
+        log.log("Count=" + graphCnt + " Data=" + slave1.getHR(getVtNode()*16+2));
+    }
+
     public void setCurrentApp(int currentApp, boolean back) {
         backControlArray[backControl] = this.mCurrentApp;
         if(!back) backControl++;
         this.mCurrentApp = currentApp;
-        if(!rrScreen) setRRscreen();
-        if(!wrScreen) setWRscreen();
-        if(!ssScreen) setSSscreen();
 
         viewFlipper.setDisplayedChild(this.mCurrentApp);
         control.setCurrentApp(this.mCurrentApp);
@@ -697,24 +806,32 @@ public class MainActivity extends AppCompatActivity
         return appReadReg;
     }
 
-    public void setAppReadReg(int appReadReg) {
-        this.appReadReg = appReadReg;
+    public void setAppReadReg(int app) {
+        this.appReadReg = app;
     }
 
     public int getAppWriteReg() {
         return appWriteReg;
     }
 
-    public void setAppWriteReg(int appWriteReg) {
-        this.appWriteReg = appWriteReg;
+    public void setAppWriteReg(int app) {
+        this.appWriteReg = app;
     }
 
     public int getAppSiteSurvey() {
         return appSiteSurvey;
     }
 
-    public void setAppSiteSurvey(int appSiteSurvey) {
-        this.appSiteSurvey = appSiteSurvey;
+    public void setAppSiteSurvey(int app) {
+        this.appSiteSurvey = app;
+    }
+
+    public int getAppVibTemp() {
+        return appVibTemp;
+    }
+
+    public void setAppVibTemp(int app) {
+        this.appVibTemp = app;
     }
 
     public int getNumNodes() {
@@ -729,21 +846,29 @@ public class MainActivity extends AppCompatActivity
         return wrNode;
     }
 
-    public void setWrNode(byte wrNode) {
-        this.wrNode = wrNode;
+    public void setWrNode(byte node) {
+        this.wrNode = node;
     }
 
     public byte getSsNode() {
         return ssNode;
     }
 
-    public void setSsNode(byte ssNode) {
-        this.ssNode = ssNode;
+    public void setSsNode(byte node) {
+        this.ssNode = node;
     }
 
+    public byte getVtNode() {
+        return vtNode;
+    }
+
+    public void setVtNode(byte node) {
+        this.vtNode = node;
+    }
 
     public void notifyDataSetChanged () {
-        arrayAdapter.notifyDataSetChanged();
+        if(getCurrentApp() == appReadReg) arrayAdapter.notifyDataSetChanged();
+        else if(getCurrentApp() == appVibTemp) updateVTScreen();
     }
 
     public boolean getIsWriteRegEnable(int index) {

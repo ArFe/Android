@@ -10,6 +10,8 @@
             android:title="@string/WriteRegtext" />
         <item android:id="@+id/siteSurvey" android:icon="@android:drawable/ic_menu_compass"
             android:title="@string/SiteSurveyText" />
+        <item android:id="@+id/vibTemp" android:icon="@android:drawable/ic_menu_rotate"
+            android:title="@string/vibTempText" />
      </group>
 
     <item android:title="@string/communicate">

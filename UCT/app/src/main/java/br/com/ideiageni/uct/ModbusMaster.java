@@ -81,7 +81,7 @@ public class ModbusMaster {
 
             sendData = slave.writeSend(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo, data);
             comm.SendMessage(sendData);
-            log.log(mCmd + " " + mAddrHi  + " " +  mAddrLo + " " +  mLenHi + " " +  mLenLo + " " +  data[1]  + " " + data[0]);
+//            log.log(mCmd + " " + mAddrHi  + " " +  mAddrLo + " " +  mLenHi + " " +  mLenLo + " " +  data[1]  + " " + data[0]);
             rt = new ReadThread();
             rt.execute(slave.getExpectedBytes());
             timerHandler.postDelayed(timeout, getTimeOutTime());
@@ -111,8 +111,8 @@ public class ModbusMaster {
             int result = 0;
             if(status == READING) result = slave.readReceive(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo, readData);
             if(status == WRITING) result = slave.writeReceive(sendData, readData);
-            log.log(readData);
-            log.log("On Post Execute. Addr = " + mAddrLo);
+//            log.log(readData);
+//            log.log("On Post Execute. Addr = " + mAddrLo);
 
             if(result == Modbus.NOERROR) setStatus(READY);
             else setStatus(ERROR);
@@ -146,7 +146,7 @@ public class ModbusMaster {
         @Override
         public void run() {
             int iAvailable = comm.getAvailable();
-            log.log("iAvailable " + iAvailable + " expectedBytes " + slave.getExpectedBytes());
+//            log.log("iAvailable " + iAvailable + " expectedBytes " + slave.getExpectedBytes());
             timerHandler.postDelayed(postStatus, 1000);
         }
     };

@@ -24,6 +24,7 @@ public class AppsControl {
     private static final int READ_SS = 13;
     private static final int WAIT_START = 14;
     private static final int WAIT_READ_SS = 15;
+    private static final int VIBRATION_TEMPERATURE = 16;
     private static final int TIMEOUT = 99;
 
     private int cycleTime = 100;
@@ -77,6 +78,8 @@ public class AppsControl {
                 else if (app == mainActivity.getAppReadReg()) mainState = READ_REGISTERS;
                 else if (app == mainActivity.getAppWriteReg()) mainState = WRITE_REGISTERS;
                 else if (app == mainActivity.getAppSiteSurvey()) mainState = SITE_SURVEY;
+                else if (app == mainActivity.getAppVibTemp()) mainState = VIBRATION_TEMPERATURE;
+//                log.log("App = " + app + " Vib temp = " + mainActivity.getAppVibTemp());
                 timerHandler.postDelayed(rTimeout, timeoutTime);
                 break;
 
@@ -97,6 +100,11 @@ public class AppsControl {
 
             case SITE_SURVEY:
                 if (appSS()) mainState = STOP;
+                if(timeout) mainState = TIMEOUT;
+                break;
+
+            case VIBRATION_TEMPERATURE:
+                if (appVT()) mainState = STOP;
                 if(timeout) mainState = TIMEOUT;
                 break;
 
@@ -149,7 +157,7 @@ public class AppsControl {
                             int addr = node * MainActivity.numReg;
                             byte mAddrLo = (byte) (addr & 0x00FF);
                             byte mAddrHi = (byte) (addr / 256 & 0x00FF);
-                            log.log("New Read. Addr = " + mAddrLo);
+//                            log.log("New Read. Addr = " + mAddrLo);
                             mainActivity.master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
                             appState = WAIT_RETURN;
                             break;
@@ -239,7 +247,7 @@ public class AppsControl {
                             byte mAddrLo = (byte) (addr & 0x00FF);
                             byte mAddrHi = (byte) (addr / 256 & 0x00FF);
                             mLenLo = 1;
-                            log.log("New Write. reg = " + mAddrLo + " data = " + mainActivity.getWriteReg(i) + " i = " + i);
+//                            log.log("New Write. reg = " + mAddrLo + " data = " + mainActivity.getWriteReg(i) + " i = " + i);
                             byte dataLo = (byte) (mainActivity.getWriteReg(i) & 0x00FF);
                             byte dataHi = (byte) (mainActivity.getWriteReg(i) / 256 & 0x00FF);
                             byte[] data = {dataHi, dataLo};
@@ -248,7 +256,7 @@ public class AppsControl {
                             break;
                         }
                     } else {
-                        log.log("Stop. i = " + i);
+//                        log.log("Stop. i = " + i);
                         appState = STOP;
                     }
 
@@ -291,7 +299,7 @@ public class AppsControl {
         byte mAddrLo = (byte) (addr & 0x00FF);
         byte mAddrHi = (byte) (addr / 256 & 0x00FF);
         byte[] data;
-        log.log(appState);
+//        log.log(appState);
 
         switch (appState) {
             case START:
@@ -331,7 +339,7 @@ public class AppsControl {
                 mAddrLo = (byte) (addr & 0x00FF);
                 mAddrHi = (byte) (addr / 256 & 0x00FF);
                 mLenLo = 16;
-                log.log("New Read. Addr = " + mAddrLo);
+//                log.log("New Read. Addr = " + mAddrLo);
                 mainActivity.master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
                 appState = WAIT_READ_SS;
                 break;
@@ -395,31 +403,51 @@ public class AppsControl {
         return result;
     }
 
-//    public static void sendMessage(int app) {
-//        if(getCurrentView() == vfSiteSurvey) {
-//            if(isSSstarted()) {
-//                node = 0;
-//                mAddrLo = 0;
-//                mAddrHi = 0;
-//                mCmd = readMultipleCmd;
-//
-//                byte[] outData = slave1.readSend(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo);
-//                comm.SendMessage(outData);
-//            } else {
-//                mCmd = writeSingleCmd;
-//                if(!isSSstarted()) node=0;
-//                else node = ssNode;
-//                int addr = ssAddr;
-//                mAddrLo = (byte) (addr & 0x00FF);
-//                mAddrHi = (byte) (addr / 256 & 0x00FF);
-//                byte[] data = {ssCmd,node};
-//                byte[] outData = slave1.writeSend(mCmd , mAddrHi, mAddrLo, data);
-//                expectedBytes = outData.length-1;
-//                comm.SendMessage(outData);
-//
-//            }
-//        }
-//    }
+    private boolean appVT(){
+        boolean result = false;
+        switch (appState) {
+            case START:
+                node = mainActivity.getVtNode();
+                appState = RUN;
+                break;
+
+            case RUN:
+                mLenLo = 16;
+                int addr = node * MainActivity.numReg;
+                byte mAddrLo = (byte) (addr & 0x00FF);
+                byte mAddrHi = (byte) (addr / 256 & 0x00FF);
+//                log.log("New Read. Addr = " + mAddrLo);
+                mainActivity.master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
+                if (autoRead) {
+                    timerHandler.postDelayed(scanNodes, autoReadTime);
+                    appState = WAIT_AUTO_READ;
+                } else appState = STOP;
+                break;
+
+            case WAIT_AUTO_READ:
+                if(mainActivity.master.isDone()) {
+                    mainActivity.notifyDataSetChanged();
+                    if(isNewApp()) appState = STOP;
+                    else if(isScan()) {
+                        appState = START;
+                        setScan(false);
+                        timerHandler.removeCallbacks(rTimeout);
+                        timerHandler.postDelayed(rTimeout, timeoutTime);
+                    }
+                } else if(timeout) appState = START;
+                break;
+
+            case STOP:
+                appState = START;
+                result = true;
+                break;
+
+            default:
+                appState = START;
+        }
+
+        return result;
+    }
 
     // runs without a timer by reposting this handler at the end of the runnable
     Handler timerHandler = new Handler();

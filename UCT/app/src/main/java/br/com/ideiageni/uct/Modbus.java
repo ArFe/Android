@@ -55,8 +55,8 @@ public class Modbus {
         int expectedBytes = 5 + 2*byteCount;
         setExpectedBytes(expectedBytes);
 
-        log.log(sendData);
-        log.log("Read Send. Addr = " + addrLo);
+//        log.log(sendData);
+//        log.log("Read Send. Addr = " + addrLo);
 
         return sendData;
     }
@@ -81,8 +81,8 @@ public class Modbus {
                             j++;
                         }
                         setHR(addr, readInt);
-                        log.log(readInt);
-                        log.log("Read Receive. Addr = " + addr);
+//                        log.log(readInt);
+//                        log.log("Read Receive. Addr = " + addr);
                         return NOERROR;
                     } else return COUNTERROR;
                 } else return CMDERROR;
