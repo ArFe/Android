@@ -8,6 +8,11 @@
         android:title="@string/pref_header_general" />
 
     <header
+        android:fragment="br.com.ideiageni.uct.SettingsActivity$CommPreferenceFragment"
+        android:icon="@drawable/ic_menu_manage"
+        android:title="@string/pref_header_comm" />
+
+    <header
         android:fragment="br.com.ideiageni.uct.SettingsActivity$NotificationPreferenceFragment"
         android:icon="@drawable/ic_notifications_black_24dp"
         android:title="@string/pref_header_notifications" />

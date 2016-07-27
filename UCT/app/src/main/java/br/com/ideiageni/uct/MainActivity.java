@@ -45,6 +45,7 @@ import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.helper.StaticLabelsFormatter;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
@@ -53,6 +54,7 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    private static final int MAX_GRAPH_COUNT = 30 * 60; //30 amostras por minuto, 60 minutos
     private static final String CURRENT_VIEW = "currentView";
     private static final int GW = 0;
     private static final int readMsgs = 6;
@@ -118,8 +120,12 @@ public class MainActivity extends AppCompatActivity
     public View coordinatorLayoutView;
     private FloatingActionButton fab;
     private OnScreenLog log;
-    GraphView graph;
+    private GraphView graphV;
+    private GraphView graphT;
     private int graphCnt;
+    private LineGraphSeries<DataPoint> seriesV;
+    private LineGraphSeries<DataPoint> seriesT;
+    private int maxVibmm = 0;
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -282,13 +288,14 @@ public class MainActivity extends AppCompatActivity
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
@@ -646,16 +653,37 @@ public class MainActivity extends AppCompatActivity
             viewFlipper.addView(vibTemp, appVibTemp);
             log.log("App Vib Temp: " + appVibTemp);
 
-            graph = (GraphView) viewFlipper.getChildAt(appVibTemp).findViewById(R.id.vtGraph);
-            LineGraphSeries<DataPoint> series = new LineGraphSeries<>(new DataPoint[] {
-                    new DataPoint(0, 1),
-                    new DataPoint(1, 5),
-                    new DataPoint(2, 3),
-                    new DataPoint(3, 2),
-                    new DataPoint(4, 6)
+            graphV = (GraphView) viewFlipper.getChildAt(appVibTemp).findViewById(R.id.vGraph);
+            StaticLabelsFormatter staticLabelsFormatterV = new StaticLabelsFormatter(graphV);
+            staticLabelsFormatterV.setHorizontalLabels(new String[] {"Time", ""});
+            graphV.getGridLabelRenderer().setLabelFormatter(staticLabelsFormatterV);
+            //graphV.getViewport().setXAxisBoundsManual(true);
+
+            seriesV = new LineGraphSeries<>(new DataPoint[] {
+                    new DataPoint(0, 0)
             });
-            graph.addSeries(series);
-            graphCnt = 5;
+            graphV.addSeries(seriesV);
+//            graphV.getViewport().setScalable(true);
+//            graphV.getViewport().setScrollable(true);
+
+            graphT = (GraphView) viewFlipper.getChildAt(appVibTemp).findViewById(R.id.tGraph);
+            StaticLabelsFormatter staticLabelsFormatterT = new StaticLabelsFormatter(graphT);
+            staticLabelsFormatterT.setVerticalLabels(new String[] {"0°C", "20°C", "40°C", "60°C", "80°C", "100°C"});
+            staticLabelsFormatterT.setHorizontalLabels(new String[] {"Time", ""});
+            graphT.getGridLabelRenderer().setLabelFormatter(staticLabelsFormatterT);
+            graphT.getViewport().setYAxisBoundsManual(true);
+            graphT.getViewport().setMinY(0);
+            graphT.getViewport().setMaxY(100);
+
+            seriesT = new LineGraphSeries<>(new DataPoint[] {
+                    new DataPoint(0, 0)
+            });
+            graphT.addSeries(seriesT);
+//            graphT.getViewport().setScalable(true);
+//            graphT.getViewport().setScrollable(true);
+
+            graphCnt = 1;
+
             rbAuto = (RadioButton) viewFlipper.getChildAt(appVibTemp).findViewById(R.id.rbAuto);
             rbAuto.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -751,14 +779,21 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void updateVTScreen () {
-        graph = (GraphView) viewFlipper.getChildAt(appVibTemp).findViewById(R.id.vtGraph);
-        LineGraphSeries<DataPoint> series = new LineGraphSeries<>(new DataPoint[] {
-                new DataPoint(graphCnt, slave1.getHR(getVtNode()*16+2))
-        });
-        graph.addSeries(series);
-        graph.onDataChanged(false, false);
+        int vibmm = slave1.getHR(getVtNode()*numReg+1);
+        float tempmm = slave1.getHR(getVtNode()*numReg+3)/20;
+        if(graphCnt < MAX_GRAPH_COUNT) {
+            seriesV.appendData(new DataPoint(graphCnt, vibmm),true, graphCnt+1);
+            seriesT.appendData(new DataPoint(graphCnt, tempmm),true, graphCnt+1);
+        } else {
+            seriesV.appendData(new DataPoint(graphCnt, vibmm),true, MAX_GRAPH_COUNT);
+            seriesT.appendData(new DataPoint(graphCnt, tempmm),true, MAX_GRAPH_COUNT);
+        }
         graphCnt++;
-        log.log("Count=" + graphCnt + " Data=" + slave1.getHR(getVtNode()*16+2));
+        if(maxVibmm < vibmm){
+            maxVibmm = vibmm;
+            graphV.onDataChanged(false,false);
+        }
+        log.log("Count=" + graphCnt + " Vib=" + vibmm + " Temp=" + tempmm);
     }
 
     public void setCurrentApp(int currentApp, boolean back) {
@@ -869,6 +904,7 @@ public class MainActivity extends AppCompatActivity
     public void notifyDataSetChanged () {
         if(getCurrentApp() == appReadReg) arrayAdapter.notifyDataSetChanged();
         else if(getCurrentApp() == appVibTemp) updateVTScreen();
+//        log.log("Curren App = " + getCurrentApp());
     }
 
     public boolean getIsWriteRegEnable(int index) {

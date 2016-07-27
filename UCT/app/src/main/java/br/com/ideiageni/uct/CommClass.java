@@ -45,8 +45,6 @@ public class CommClass {
         }
         SetupD2xxLibrary();
         ConfigDev();
-        timerHandler.postDelayed(flushRun, 1000);
-
     }
 
     public boolean ConfigDev(){

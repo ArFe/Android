@@ -1,58 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="br.com.ideiageni.uct">
 
-<uses-feature
-    android:name="android.hardware.usb.host" />
+    <uses-feature android:name="android.hardware.usb.host" />
 
-<uses-permission
-    android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
-<application
-    android:allowBackup="true"
-    android:icon="@mipmap/dx80_gw"
-    android:label="@string/app_name"
-    android:supportsRtl="true"
-    android:theme="@style/AppTheme">
-    <service
-        android:name=".services.BitBangModeIntentService"
-        android:enabled="true" />
-    <service
-        android:name=".services.BitBangModeService"
-        android:enabled="true" />
-
-    <activity
-        android:name=".MainActivity"
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/dx80_gw"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme.NoActionBar"
-        android:windowSoftInputMode="adjustPan">
-        <intent-filter>
-            <action
-                android:name="android.intent.action.MAIN" />
-            <category
-                android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
-        <intent-filter>
-            <action
-                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
-        </intent-filter>
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <service
+            android:name=".services.BitBangModeIntentService"
+            android:enabled="true" />
+        <service
+            android:name=".services.BitBangModeService"
+            android:enabled="true" />
+
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustPan">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/device_filter" />
+        </activity>
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="br.com.ideiageni.uct.MainActivity" />
+        </activity>
+        <!--
+ ATTENTION: This was auto-generated to add Google Play services to your project for
+     App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information.
+        -->
         <meta-data
-            android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
-            android:resource="@xml/device_filter" />
-    </activity>
-    <activity
-        android:name=".SettingsActivity"
-        android:label="@string/title_activity_settings"
-        android:parentActivityName=".MainActivity">
-    <meta-data
-        android:name="android.support.PARENT_ACTIVITY"
-        android:value="br.com.ideiageni.uct.MainActivity" />
-    </activity><!-- ATTENTION: This was auto-generated to add Google Play services to your project for
-     App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information. -->
-    <meta-data
-        android:name="com.google.android.gms.version"
-        android:value="@integer/google_play_services_version" />
-</application>
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+    </application>
 
 </manifest>

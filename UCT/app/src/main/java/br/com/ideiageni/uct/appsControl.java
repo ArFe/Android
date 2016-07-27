@@ -25,6 +25,7 @@ public class AppsControl {
     private static final int WAIT_START = 14;
     private static final int WAIT_READ_SS = 15;
     private static final int VIBRATION_TEMPERATURE = 16;
+    private static final int WAIT_DONE = 16;
     private static final int TIMEOUT = 99;
 
     private int cycleTime = 100;
@@ -145,7 +146,6 @@ public class AppsControl {
                             + "Long click on the Nodes you want to read.", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
                 }
-
                 break;
 
             case RUN:
@@ -159,21 +159,19 @@ public class AppsControl {
                             byte mAddrHi = (byte) (addr / 256 & 0x00FF);
 //                            log.log("New Read. Addr = " + mAddrLo);
                             mainActivity.master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
-                            appState = WAIT_RETURN;
+                            appState = WAIT_DONE;
                             break;
                         }
                     } else {
-                        if (autoRead) {
-                            timerHandler.postDelayed(scanNodes, autoReadTime);
-                            appState = WAIT_AUTO_READ;
-                        } else appState = STOP;
+                        appState = WAIT_AUTO_READ;
+                        timerHandler.postDelayed(scanNodes, autoReadTime);
                     }
-
                 }
                 break;
 
-            case WAIT_RETURN:
+            case WAIT_DONE:
                 if(mainActivity.master.isDone()) {
+                    mainActivity.notifyDataSetChanged();
                     if(mainActivity.master.getStatus()== ModbusMaster.ERROR){
                         mainActivity.master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
@@ -185,23 +183,18 @@ public class AppsControl {
                     } else {// Case not error, jump to next node
                         node++;
                     }
-                    mainActivity.notifyDataSetChanged();
-                    if(isNewApp()) appState = STOP;
-                    else appState = RUN;
+                    appState = RUN;
                 } else if(timeout) appState = START;
                 break;
 
             case WAIT_AUTO_READ:
-                if(mainActivity.master.isDone()) {
-                    mainActivity.notifyDataSetChanged();
-                    if(isNewApp()) appState = STOP;
-                    else if(isScan()) {
-                        appState = START;
-                        setScan(false);
-                        timerHandler.removeCallbacks(rTimeout);
-                        timerHandler.postDelayed(rTimeout, timeoutTime);
-                    }
-                } else if(timeout) appState = START;
+                if(isNewApp()) appState = STOP;
+                else if (isScan()) {
+                    appState = START;
+                    setScan(false);
+                    timerHandler.removeCallbacks(rTimeout);
+                    timerHandler.postDelayed(rTimeout, timeoutTime);
+                }
                 break;
 
             case STOP:
@@ -418,23 +411,27 @@ public class AppsControl {
                 byte mAddrHi = (byte) (addr / 256 & 0x00FF);
 //                log.log("New Read. Addr = " + mAddrLo);
                 mainActivity.master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
-                if (autoRead) {
-                    timerHandler.postDelayed(scanNodes, autoReadTime);
-                    appState = WAIT_AUTO_READ;
-                } else appState = STOP;
+                appState = WAIT_DONE;
+                break;
+
+            case WAIT_DONE:
+                if(mainActivity.master.isDone()) {
+                    mainActivity.notifyDataSetChanged();
+                    if (autoRead) {
+                        timerHandler.postDelayed(scanNodes, autoReadTime);
+                        appState = WAIT_AUTO_READ;
+                    } else appState = STOP;
+                } else if(timeout) appState = START;
                 break;
 
             case WAIT_AUTO_READ:
-                if(mainActivity.master.isDone()) {
-                    mainActivity.notifyDataSetChanged();
-                    if(isNewApp()) appState = STOP;
-                    else if(isScan()) {
-                        appState = START;
-                        setScan(false);
-                        timerHandler.removeCallbacks(rTimeout);
-                        timerHandler.postDelayed(rTimeout, timeoutTime);
-                    }
-                } else if(timeout) appState = START;
+                if(isNewApp()) appState = STOP;
+                else if(isScan()) {
+                    appState = START;
+                    setScan(false);
+                    timerHandler.removeCallbacks(rTimeout);
+                    timerHandler.postDelayed(rTimeout, timeoutTime);
+                }
                 break;
 
             case STOP:
