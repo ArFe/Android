@@ -61,10 +61,22 @@
         <item>38400</item>
     </string-array>
 
+    <integer-array name="baud_rate_int">
+        <item>9600</item>
+        <item>19200</item>
+        <item>38400</item>
+    </integer-array>
+
     <string-array name="parity">
         <item>none</item>
         <item>odd</item>
         <item>even</item>
+    </string-array>
+
+    <string-array name="parity_int">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
     </string-array>
 
 
@@ -93,7 +105,7 @@
 
     <!-- Example settings for Data & Sync -->
     <string name="pref_header_data_sync">Data &amp; sync</string>
-
+    <string name="pref_title_baud_rate">Baud Rate</string>
     <string name="pref_title_sync_frequency">Sync frequency</string>
     <string-array name="pref_sync_frequency_titles">
         <item>15 minutes</item>
@@ -141,12 +153,16 @@
     <string name="Device">Device:</string>
     <string name="Write">Write</string>
     <string name="headerImage">Header Image</string>
-    <string name="connect">Connect</string>
+    <string name="connect_usb">Connect USB</string>
     <string name="communicate">Communicate</string>
     <string name="share">Share</string>
     <string name="send">Send</string>
     <string name="title_activity_main2">Main2Activity</string>
-    <string name="disconnect">Disconnect</string>
+    <string name="disconnect_usb">Disconnect USB</string>
     <string name="vibTempText">Vibration and Temperature</string>
     <string name="pref_header_comm">Communications</string>
+    <string name="pref_title_parity">Parity</string>
+    <string name="pref_title_modbus_slave_id">Modbus Slave ID</string>
+    <string name="pref_title_number_retries">Number of Retries</string>
+    <string name="pref_title_modbus_timeout">Modbus Timeout (ms)</string>
 </resources>

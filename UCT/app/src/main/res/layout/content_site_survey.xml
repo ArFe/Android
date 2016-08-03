@@ -37,8 +37,10 @@
         android:id="@+id/pbStrong"
         android:max="100"
         android:progressTint="#00ff00"
+        android:progressDrawable="@drawable/green_pb"
         android:indeterminate="false"
         android:layout_below="@+id/strong"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
 
     <ProgressBar
@@ -49,7 +51,9 @@
         android:id="@+id/pbGood"
         android:max="100"
         android:progressTint="#ffff00"
+        android:progressDrawable="@drawable/yellow_pb"
         android:layout_below="@+id/good"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
 
     <ProgressBar
@@ -60,7 +64,9 @@
         android:id="@+id/pbWeak"
         android:max="100"
         android:progressTint="#ff0000"
+        android:progressDrawable="@drawable/red_pb"
         android:layout_below="@+id/weak"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
 
     <ProgressBar
@@ -71,7 +77,9 @@
         android:id="@+id/pbMissed"
         android:max="100"
         android:progressTint="#A0A0A0"
+        android:progressDrawable="@drawable/gray_pb"
         android:layout_below="@+id/missed"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
 
     <TextView
@@ -80,6 +88,7 @@
         android:text="@string/textStrong"
         android:id="@+id/strong"
         android:layout_below="@+id/tvSiteSurvey"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_marginTop="20dp"
         android:layout_marginBottom="20dp"/>
@@ -123,6 +132,7 @@
         android:text="80%"
         android:id="@+id/tvStrong"
         android:layout_below="@+id/strong"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"/>
 
     <TextView
@@ -131,6 +141,7 @@
         android:text="60%"
         android:id="@+id/tvGood"
         android:layout_alignTop="@+id/pbGood"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
 
     <TextView
@@ -139,6 +150,7 @@
         android:text="40%"
         android:id="@+id/tvWeak"
         android:layout_below="@+id/weak"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
 
     <TextView
@@ -147,6 +159,7 @@
         android:text="20%"
         android:id="@+id/tvMissed"
         android:layout_below="@+id/missed"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
 
     <TextView

@@ -26,6 +26,10 @@ public class AppsControl {
     private static final int WAIT_READ_SS = 15;
     private static final int VIBRATION_TEMPERATURE = 16;
     private static final int WAIT_DONE = 16;
+    private static final int DISCONNECT = 17;
+    private static final int CREATE_DEV_LIST = 18;
+    private static final int CONFIG = 19;
+    private static final int CONFIGURED = 20;
     private static final int TIMEOUT = 99;
 
     private int cycleTime = 100;
@@ -41,18 +45,23 @@ public class AppsControl {
     private int mainState = 0;
     private int appState = 0;
     private MainActivity mainActivity;
+    public ModbusMaster master;
 
     private byte node = 0;
     private byte wrReg = 0;
     private final byte mLenHi = 0;
     private byte mLenLo = 16;
-    private boolean autoRead = false;
+    private boolean autoReadRR = false;
+    private boolean autoReadVT = false;
     private int autoReadTime = 2000;
     private int ssReadTime = 500;
     private boolean scan = false;
     private boolean newApp = false;
     private boolean running = false;
     private boolean timeout = false;
+    private boolean commConfigured = false;
+    private int cntTimeout = 0;
+    private boolean started = false;
 
     private int counter = 0;
 
@@ -73,8 +82,11 @@ public class AppsControl {
                 break;
 
             case START:
+                log.log("START");
                 app = getCurrentApp();
                 setNewApp(false);
+                mainActivity.keepScreenOn();
+                mainActivity.setFABPause();
                 if (app == mainActivity.getAppConnect()) mainState = CONNECT;
                 else if (app == mainActivity.getAppReadReg()) mainState = READ_REGISTERS;
                 else if (app == mainActivity.getAppWriteReg()) mainState = WRITE_REGISTERS;
@@ -85,7 +97,7 @@ public class AppsControl {
                 break;
 
             case CONNECT:
-                mainState = STOP;
+                if (appCN()) mainState = STOP;
                 if(timeout) mainState = TIMEOUT;
                 break;
 
@@ -112,14 +124,16 @@ public class AppsControl {
             case STOP:
                 mainState = HOLD;
                 setRunning(false);
+                mainActivity.clearKeepScreenOn();
+                mainActivity.setFABPlay();
                 break;
 
             case TIMEOUT:
-                mainState = HOLD;
-                setRunning(false);
+                mainState = STOP;
                 timeout = false;
-                onStop();
-                log.log("Timeout");
+                cntTimeout++;
+                log.log("Timeout " + cntTimeout);
+                if(cntTimeout > mainActivity.getNumRetries()) onStop();
                 break;
 
             default:
@@ -127,6 +141,55 @@ public class AppsControl {
                 setRunning(false);
         }
 
+    }
+
+    private boolean appCN(){
+        boolean result = false;
+        switch (appState) {
+            case START:
+                if(commConfigured) appState = DISCONNECT;
+                else appState = CREATE_DEV_LIST;
+                break;
+
+            case CREATE_DEV_LIST:
+                if(mainActivity.comm.getDevCount() <= 0) mainActivity.comm.createDeviceList();
+                else appState = CONNECT;
+                break;
+
+            case CONNECT:
+                if((mainActivity.comm.getftDevNull()||!mainActivity.comm.ftDev.isOpen())
+                        && mainActivity.comm.getDevCount() > 0) mainActivity.comm.connectFunction();
+                else appState = CONFIG;
+                break;
+
+            case CONFIG:
+                if (!(mainActivity.comm.isUartConfigured() && !mainActivity.comm.getftDevNull()
+                        && mainActivity.comm.getDevCount() > 0)) mainActivity.comm.ConfigPort();
+                else appState = CONFIGURED;
+                break;
+
+            case CONFIGURED:
+                if(mainActivity.comm.getUartConfigured()) {
+                    commConfigured = true;
+                    appState = START;
+                    mainActivity.setFABCloseClearCancel();
+                    result = true;
+                }
+
+                break;
+
+            case DISCONNECT:
+                mainActivity.comm.disconnectFunction();
+                commConfigured = false;
+                appState = START;
+                mainActivity.setFABPlay();
+                result = true;
+
+            default:
+                appState = START;
+        }
+
+        return result;
     }
 
     private boolean appRR(){
@@ -188,7 +251,7 @@ public class AppsControl {
                 break;
 
             case WAIT_AUTO_READ:
-                if(isNewApp()) appState = STOP;
+                if(isNewApp()||!isRunning()||!isAutoReadRR()) appState = STOP;
                 else if (isScan()) {
                     appState = START;
                     setScan(false);
@@ -201,6 +264,9 @@ public class AppsControl {
                 Snackbar.make(mainActivity.coordinatorLayoutView, "Long click on the Nodes you want to read.", Snackbar.LENGTH_SHORT)
                         .setAction("Action", null).show();
                 appState = START;
+                timerHandler.removeCallbacks(rTimeout);
+                timerHandler.removeCallbacks(scanNodes);
+                setScan(false);
                 result = true;
                 break;
 
@@ -417,7 +483,7 @@ public class AppsControl {
             case WAIT_DONE:
                 if(mainActivity.master.isDone()) {
                     mainActivity.notifyDataSetChanged();
-                    if (autoRead) {
+                    if (autoReadVT) {
                         timerHandler.postDelayed(scanNodes, autoReadTime);
                         appState = WAIT_AUTO_READ;
                     } else appState = STOP;
@@ -425,7 +491,7 @@ public class AppsControl {
                 break;
 
             case WAIT_AUTO_READ:
-                if(isNewApp()) appState = STOP;
+                if(isNewApp()||!isRunning()||!isAutoReadRR()) appState = STOP;
                 else if(isScan()) {
                     appState = START;
                     setScan(false);
@@ -489,11 +555,15 @@ public class AppsControl {
     };
 
     public void onStart(){
-        timerHandler.postDelayed(mainRun, cycleTime);
-        timerHandler.postDelayed(showStatus, reportTime);
+        if(!started) {
+            timerHandler.postDelayed(mainRun, cycleTime);
+            timerHandler.postDelayed(showStatus, reportTime);
+            started = true;
+        }
     }
 
     public void onStop(){
+        started = false;
         timerHandler.removeCallbacks(showStatus);
         timerHandler.removeCallbacks(scanNodes);
         timerHandler.removeCallbacks(mainRun);
@@ -508,12 +578,20 @@ public class AppsControl {
         this.autoReadTime = autoReadTime;
     }
 
-    public boolean isAutoRead() {
-        return autoRead;
+    public boolean isAutoReadRR() {
+        return autoReadRR;
     }
 
-    public void setAutoRead(boolean autoRead) {
-        this.autoRead = autoRead;
+    public void setAutoReadRR(boolean autoRead) {
+        this.autoReadRR = autoRead;
+    }
+
+    public boolean isAutoReadVT() {
+        return autoReadVT;
+    }
+
+    public void setAutoReadVT(boolean autoRead) {
+        this.autoReadVT = autoRead;
     }
 
     public int getSsReadTime() {
@@ -553,7 +631,7 @@ public class AppsControl {
         return running;
     }
 
-    private void setRunning(boolean running) {
+    public void setRunning(boolean running) {
         this.running = running;
     }
 

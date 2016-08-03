@@ -222,7 +222,11 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
-            bindPreferenceSummaryToValue(findPreference("sync_frequency"));
+            bindPreferenceSummaryToValue(findPreference("baud_rate"));
+            bindPreferenceSummaryToValue(findPreference("parity"));
+            bindPreferenceSummaryToValue(findPreference("modbus_slave_id"));
+            bindPreferenceSummaryToValue(findPreference("number_retries"));
+            bindPreferenceSummaryToValue(findPreference("modbus_timeout"));
         }
 
         @Override

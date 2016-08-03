@@ -18,7 +18,7 @@ public class CommClass {
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     //    D2xxManager ftdid2xx;
-    private FT_Device ftDev = null;
+    public FT_Device ftDev = null;
     private int DevCount = -1;
     private int currentIndex = -1;
     private int openIndex = 0;
@@ -34,7 +34,6 @@ public class CommClass {
     private Context context;
 
     private boolean uartConfigured = false;
-
 
     public CommClass(Context comContext){
         context = comContext;
@@ -358,5 +357,7 @@ public class CommClass {
         return new String(hexChars);
     }
 
-
+    public boolean isUartConfigured() {
+        return uartConfigured;
+    }
 }

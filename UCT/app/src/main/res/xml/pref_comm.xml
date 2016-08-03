@@ -7,15 +7,50 @@
         android:defaultValue="19200"
         android:entries="@array/baud_rate"
         android:entryValues="@array/baud_rate"
-        android:key="sync_frequency"
+        android:key="baud_rate"
         android:negativeButtonText="@null"
         android:positiveButtonText="@null"
-        android:title="@string/pref_title_sync_frequency" />
+        android:title="@string/pref_title_baud_rate" />
 
-    <!-- This preference simply launches an intent when selected. Use this UI sparingly, per
-         design guidelines. -->
-    <Preference android:title="@string/pref_title_system_sync_settings">
-        <intent android:action="android.settings.SYNC_SETTINGS" />
-    </Preference>
+    <ListPreference
+        android:defaultValue="none"
+        android:entries="@array/parity"
+        android:entryValues="@array/parity_int"
+        android:key="parity"
+        android:negativeButtonText="@null"
+        android:positiveButtonText="@null"
+        android:title="@string/pref_title_parity" />
+
+    <!-- NOTE: EditTextPreference accepts EditText attributes. -->
+    <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
+    <EditTextPreference
+        android:defaultValue="1"
+        android:inputType="number"
+        android:key="modbus_slave_id"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_modbus_slave_id" />
+
+    <EditTextPreference
+        android:defaultValue="10"
+        android:inputType="number"
+        android:key="number_retries"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_number_retries" />
+
+    <EditTextPreference
+        android:defaultValue="2000"
+        android:inputType="number"
+        android:key="modbus_timeout"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_modbus_timeout" />
+
+
+
 
 </PreferenceScreen>

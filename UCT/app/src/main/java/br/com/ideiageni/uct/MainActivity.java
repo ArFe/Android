@@ -4,9 +4,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.graphics.Rect;
 import android.hardware.usb.UsbManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.AppCompatCheckBox;
@@ -25,6 +28,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -66,8 +70,15 @@ public class MainActivity extends AppCompatActivity
             R.id.lv_valor5, R.id.lv_valor6, R.id.lv_valor7, R.id.lv_valor8, R.id.lv_valor9, R.id.lv_valor10,
             R.id.lv_valor11, R.id.lv_valor12, R.id.lv_valor13, R.id.lv_valor14, R.id.lv_valor15, R.id.lv_valor16};
 
-    private CommClass comm;
+    public CommClass comm;
     private byte mSlave = 1;
+    private byte parity = 0;
+    private int numRetries = 10;
+    private int timeout = 2000;
+    private int baudRate = 19200;
+    private final byte dataBits = 8;
+    private final byte stopBits = 1;
+    private final byte flowControl = 0;
     private int numNodes = numMaxNodes;
     private int numRegisters = numReg * numNodes+1;
     public DX80Nodes nodes = new DX80Nodes(numNodes);
@@ -80,6 +91,7 @@ public class MainActivity extends AppCompatActivity
     private int[] writeReg = new int[numReg];
     private boolean[] isWriteRegEnable = new boolean[numReg];
     private boolean isSsEnable = false;
+    private boolean commConfigChanged = false;
 
     private DX80Adapter arrayAdapter;
 
@@ -126,6 +138,7 @@ public class MainActivity extends AppCompatActivity
     private LineGraphSeries<DataPoint> seriesV;
     private LineGraphSeries<DataPoint> seriesT;
     private int maxVibmm = 0;
+    private boolean usbAttached = false;
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -150,12 +163,36 @@ public class MainActivity extends AppCompatActivity
         this.registerReceiver(mUsbReceiver, filter);
 
         // Insert Connection Screen
-        comm = new CommClass(getApplicationContext());
-        master = new ModbusMaster(comm, slave1);
         setCNscreen();
         log = new OnScreenLog(this, R.id.mnView);
         // Enable GW reading
         nodes.setReadEnable(GW, true);
+
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+        assert fab != null;
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                if(comm!=null) {
+//                    if (!comm.getUartConfigured()) {
+//                        Snackbar.make(view, "Comm not ready yet...", Snackbar.LENGTH_SHORT)
+//                                .setAction("Action", null).show();
+//                        comm.SetConfig(baudRate,dataBits,stopBits,parity,flowControl);
+//                    } else {
+                    control.setRunning(!control.isRunning());
+                    setSsEnable(!isSsEnable());
+                    Snackbar.make(view, "Running is " + control.isRunning(), Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
+//                    }
+                } else {
+                    Snackbar.make(view, "Not connected...", Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
+                }
+            }
+        });
+
+
         // Check whether we're recreating a previously destroyed instance
         if (savedInstanceState != null) {
             // Restore value of members from saved state
@@ -165,28 +202,36 @@ public class MainActivity extends AppCompatActivity
             setCurrentApp(0,false);
         }
 
-        fab = (FloatingActionButton) findViewById(R.id.fab);
-        assert fab != null;
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
 
-                if(comm!=null) {
-                    if (!comm.getUartConfigured()) {
-                        Snackbar.make(view, "Comm not ready yet...", Snackbar.LENGTH_SHORT)
-                                .setAction("Action", null).show();
-                        comm.ConfigDev();
-                    } else {
-                        control.setRunningTrue();
-                        setSsEnable(!isSsEnable());
-                        Snackbar.make(view, "Running is " + control.isRunning(), Snackbar.LENGTH_SHORT)
-                                .setAction("Action", null).show();                   }
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPref.registerOnSharedPreferenceChangeListener(new SharedPreferences.OnSharedPreferenceChangeListener() {
+
+            public void onSharedPreferenceChanged(SharedPreferences sharedPref,
+                                                  String key) {
+                if (key.equals("baud_rate")||key.equals("parity")) {
+                    baudRate = Integer.valueOf(sharedPref.getString("baud_rate", "19200"));
+                    parity = Byte.valueOf(sharedPref.getString("parity", "0"));
+                    if(comm != null) {
+                        if (comm.getUartConfigured()) {
+                            comm.SetConfig(baudRate, dataBits, stopBits, parity, flowControl);
+                        }
+                    }
+                } else if(key.equals("modbus_slave_id")) {
+                    mSlave = Byte.valueOf(sharedPref.getString("modbus_slave_id", "1"));
+                    slave1.setSlaveAddr(mSlave);
                 } else {
-                    Snackbar.make(view, "Comm Null...", Snackbar.LENGTH_SHORT)
-                            .setAction("Action", null).show();
+                    numRetries = Integer.valueOf(sharedPref.getString("number_retries", "10"));
+                    timeout = Integer.valueOf(sharedPref.getString("modbus_timeout", "2000"));
                 }
             }
         });
+
+        baudRate = Integer.valueOf(sharedPref.getString("baud_rate", "19200"));
+        parity = Byte.valueOf(sharedPref.getString("parity", "0"));
+        mSlave = Byte.valueOf(sharedPref.getString("modbus_slave_id", "1"));
+        slave1.setSlaveAddr(mSlave);
+        numRetries = Integer.valueOf(sharedPref.getString("number_retries", "10"));
+        timeout = Integer.valueOf(sharedPref.getString("modbus_timeout", "2000"));
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -347,23 +392,33 @@ public class MainActivity extends AppCompatActivity
             appConnect = viewFlipper.getChildCount();
             viewFlipper.addView(connect, appConnect);
 
-            final Button btnConnect = (Button) viewFlipper.getChildAt(appConnect).findViewById(R.id.btConnect);
-            if (btnConnect != null) {
-                btnConnect.setOnClickListener(new View.OnClickListener() {
+            Button btnConnectUsb = (Button) viewFlipper.getChildAt(appConnect).findViewById(R.id.btConnectUsb);
+            if (btnConnectUsb != null) {
+                UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);
+                if(manager.getDeviceList().isEmpty()) {
+                    btnConnectUsb.setClickable(false);
+                    btnConnectUsb.setEnabled(false);
+                } else {
+                    btnConnectUsb.setClickable(true);
+                    btnConnectUsb.setEnabled(true);
+                }
+                btnConnectUsb.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        control.setRunningTrue();
-                        if (comm == null) {
+                        Button btn = (Button) view;
+                        if (comm == null && usbAttached) {
                             comm = new CommClass(getApplicationContext());
                             master = new ModbusMaster(comm, slave1);
+                            log.log("Comm Class Created");
                         }
-
-                        if (!comm.getUartConfigured()) {
-                            Snackbar.make(view, "Comm not ready yet...", Snackbar.LENGTH_SHORT)
-                                    .setAction("Action", null).show();
-                            comm.ConfigDev();
-                            btnConnect.setText(R.string.connect);
-                        } else btnConnect.setText(R.string.disconnect);
+                        if (comm != null) {
+                            if (!comm.getUartConfigured()) {
+                                comm.ConfigDev();
+                            }
+                            if(comm.getUartConfigured()) btn.setText(R.string.disconnect_usb);
+                            else btn.setText(R.string.connect_usb);
+                            log.log("Comm configured " + comm.getUartConfigured());
+                        }
                     }
                 });
             }
@@ -405,34 +460,43 @@ public class MainActivity extends AppCompatActivity
                 list.setOnTouchListener(new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
-                        switch(event.getAction()) {
-                            case MotionEvent.ACTION_DOWN:
-                                x1 = event.getX();
-                                break;
-                            case MotionEvent.ACTION_MOVE:// .ACTION_UP:
-                                x2 = event.getX();
-                                float deltaX = x2 - x1;
-                                float absDeltaX = Math.abs(deltaX);
-                                if (absDeltaX > MIN_DISTANCE) {
-                                    // Left to Right swipe action
-                                    if (x2 > x1) {
-                                        if(hScrollIndex>(int)absDeltaX/MIN_DISTANCE) hScrollIndex = hScrollIndex - (int) absDeltaX/MIN_DISTANCE;
-                                        else hScrollIndex = 0;
+                        Rect scrollBounds = new Rect();
+                        viewFlipper.getHitRect(scrollBounds);
+                        TextView lastTv = (TextView) viewFlipper.getChildAt(appReadReg).findViewById(R.id.tv_valor16);
+
+                        if (!lastTv.getLocalVisibleRect(scrollBounds)) {
+                            // imageView is within the visible window
+                            switch(event.getAction()) {
+                                case MotionEvent.ACTION_DOWN:
+                                    x1 = event.getX();
+                                    break;
+                                case MotionEvent.ACTION_MOVE:// .ACTION_UP:
+                                    x2 = event.getX();
+                                    float deltaX = x2 - x1;
+                                    float absDeltaX = Math.abs(deltaX);
+                                    if (absDeltaX > MIN_DISTANCE) {
+                                        // Left to Right swipe action
+                                        if (x2 > x1) {
+                                            if(hScrollIndex>(int)absDeltaX/MIN_DISTANCE) hScrollIndex = hScrollIndex - (int) absDeltaX/MIN_DISTANCE;
+                                            else hScrollIndex = 0;
+                                        }
+                                        // Right to left swipe action
+                                        else {
+                                            if(hScrollIndex<numReg-5-(int) absDeltaX/MIN_DISTANCE) hScrollIndex = hScrollIndex + (int) absDeltaX/MIN_DISTANCE;
+                                            else hScrollIndex = numReg-5;
+                                        }
+                                        x1 = x2;
+                                        arrayAdapter.setHScrollIndex(hScrollIndex);
+                                        arrayAdapter.notifyDataSetChanged();
+                                        scrollHeader(hScrollIndex);
                                     }
-                                    // Right to left swipe action
                                     else {
-                                        if(hScrollIndex<numReg-5-(int) absDeltaX/MIN_DISTANCE) hScrollIndex = hScrollIndex + (int) absDeltaX/MIN_DISTANCE;
-                                        else hScrollIndex = numReg-5;
+                                        // consider as something else - a screen tap for example
                                     }
-                                    x1 = x2;
-                                    arrayAdapter.setHScrollIndex(hScrollIndex);
-                                    arrayAdapter.notifyDataSetChanged();
-                                    scrollHeader(hScrollIndex);
-                                }
-                                else {
-                                    // consider as something else - a screen tap for example
-                                }
-                                break;
+                                    break;
+                            }
+                        } else {
+                            // imageView is not within the visible window
                         }
                         return false;
                     }
@@ -443,8 +507,8 @@ public class MainActivity extends AppCompatActivity
             rbAuto.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    control.setAutoRead(rbAuto.isChecked());
-                    Snackbar.make(view, "Auto read is " + control.isAutoRead() + ". Auto read time is " +
+                    control.setAutoReadRR(rbAuto.isChecked());
+                    Snackbar.make(view, "Auto read is " + control.isAutoReadRR() + ". Auto read time is " +
                             control.getAutoReadTime() / 1000 + " seconds", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
                 }
@@ -454,8 +518,8 @@ public class MainActivity extends AppCompatActivity
             rbManual.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    control.setAutoRead(!rbManual.isChecked());
-                    Snackbar.make(view, "Auto read is " + control.isAutoRead() + ".", Snackbar.LENGTH_SHORT)
+                    control.setAutoReadRR(!rbManual.isChecked());
+                    Snackbar.make(view, "Auto read is " + control.isAutoReadRR() + ".", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
                 }
             });
@@ -507,7 +571,8 @@ public class MainActivity extends AppCompatActivity
                     setWrNode(Byte.parseByte(String.valueOf(position)));
                     slave1.setHR(0,(int)getWrNode());
 
-                    Toast.makeText(getApplicationContext(), "Write node: " + getWrNode(), Toast.LENGTH_SHORT).show();
+                    Snackbar.make(coordinatorLayoutView, "Write node: " + getWrNode(), Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
                 }
 
                 @Override
@@ -594,18 +659,18 @@ public class MainActivity extends AppCompatActivity
 
             if (pbStrong != null) {
                 pbStrong.setProgress(80);
-                pbStrong.setScaleY(10f);
+                pbStrong.setScaleY(3f);
             }
             if (pbGood != null) {
-                pbGood.setScaleY(10f);
+                pbGood.setScaleY(3f);
                 pbGood.setProgress(60);
             }
             if (pbWeak != null) {
-                pbWeak.setScaleY(10f);
+                pbWeak.setScaleY(3f);
                 pbWeak.setProgress(40);
             }
             if (pbMissed != null) {
-                pbMissed.setScaleY(10f);
+                pbMissed.setScaleY(3f);
                 pbMissed.setProgress(20);
             }
 
@@ -625,7 +690,8 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void onItemSelected(AdapterView<?> adapter, View v, int position, long arg3) {
                     setSsNode(Byte.parseByte((String) adapter.getItemAtPosition(position)));
-                    Toast.makeText(getApplicationContext(), "Site Survey node: " + getSsNode(), Toast.LENGTH_SHORT).show();
+                    Snackbar.make(coordinatorLayoutView, "Site Survey node: " + getWrNode(), Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
                 }
 
                 @Override
@@ -633,7 +699,6 @@ public class MainActivity extends AppCompatActivity
                     // your code here
                 }
             });
-
 
             ssScreen = true;
         }
@@ -688,8 +753,8 @@ public class MainActivity extends AppCompatActivity
             rbAuto.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    control.setAutoRead(rbAuto.isChecked());
-                    Snackbar.make(view, "Auto read is " + control.isAutoRead() + ". Auto read time is " +
+                    control.setAutoReadVT(rbAuto.isChecked());
+                    Snackbar.make(view, "Auto read is " + control.isAutoReadVT() + ". Auto read time is " +
                             control.getAutoReadTime() / 1000 + " seconds", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
                 }
@@ -699,8 +764,8 @@ public class MainActivity extends AppCompatActivity
             rbManual.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    control.setAutoRead(!rbManual.isChecked());
-                    Snackbar.make(view, "Auto read is " + control.isAutoRead() + ".", Snackbar.LENGTH_SHORT)
+                    control.setAutoReadVT(!rbManual.isChecked());
+                    Snackbar.make(view, "Auto read is " + control.isAutoReadVT() + ".", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
                 }
             });
@@ -797,8 +862,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void setCurrentApp(int currentApp, boolean back) {
-        backControlArray[backControl] = this.mCurrentApp;
-        if(!back) backControl++;
+        if(!back) {
+            backControlArray[backControl] = this.mCurrentApp;
+            backControl++;
+        }
         this.mCurrentApp = currentApp;
 
         viewFlipper.setDisplayedChild(this.mCurrentApp);
@@ -931,6 +998,20 @@ public class MainActivity extends AppCompatActivity
         isSsEnable = ssEnable;
     }
 
+    public void keepScreenOn(){getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);}
+
+    public void clearKeepScreenOn(){getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);}
+
+    public int getNumRetries() {return numRetries;}
+
+    public void setFABPlay() {fab.setImageResource(android.R.drawable.ic_media_play);}
+
+    public void setFABPause() {fab.setImageResource(android.R.drawable.ic_media_pause);}
+
+    public void setFABCloseClearCancel() {fab.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);}
+
+
+
     /***********
      * USB broadcast receiver
      *******************************************/
@@ -940,6 +1021,14 @@ public class MainActivity extends AppCompatActivity
             //String TAG = "FragL";
             String action = intent.getAction();
             if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                log.log("Detached");
+                usbAttached = false;
+                Button btnConnectUsb = (Button) viewFlipper.getChildAt(appConnect).findViewById(R.id.btConnectUsb);
+                if (btnConnectUsb != null) {
+                    btnConnectUsb.setClickable(false);
+                    btnConnectUsb.setText(R.string.connect_usb);
+                    btnConnectUsb.setEnabled(false);
+                }
                 control.onStop();
                 if(comm!=null) {
                     if (comm.getUartConfigured()) {
@@ -948,8 +1037,15 @@ public class MainActivity extends AppCompatActivity
                     comm.disconnectFunction();
                 }
             } else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+                log.log("Attached");
+                usbAttached = true;
                 control.onStart();
-                if(comm!=null && !comm.getUartConfigured()) comm.ConfigDev();
+                Button btnConnectUsb = (Button) viewFlipper.getChildAt(appConnect).findViewById(R.id.btConnectUsb);
+                if (btnConnectUsb != null) {
+                    btnConnectUsb.setClickable(true);
+                    btnConnectUsb.setText(R.string.connect_usb);
+                    btnConnectUsb.setEnabled(true);
+                }
             }
         }
     };
