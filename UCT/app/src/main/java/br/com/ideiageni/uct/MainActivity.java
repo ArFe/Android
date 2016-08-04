@@ -42,7 +42,6 @@ import android.widget.Spinner;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.ViewFlipper;
 
 import com.google.android.gms.appindexing.Action;
@@ -83,7 +82,7 @@ public class MainActivity extends AppCompatActivity
     private int numRegisters = numReg * numNodes+1;
     public DX80Nodes nodes = new DX80Nodes(numNodes);
     public Modbus slave1 = new Modbus(mSlave, numRegisters);
-    public ModbusMaster master;
+//    public ModbusMaster master;
     public AppsControl control;
     private byte wrNode = 0;
     private byte ssNode = 0;
@@ -109,6 +108,7 @@ public class MainActivity extends AppCompatActivity
     private int appSiteSurvey = 999;
     private int appVibTemp = 999;
     private int mCurrentApp = 0;
+    private int mCurrentAppId = R.id.connect;
     private int[] backControlArray= new int[100];
     private int backControl = 0;
 
@@ -139,6 +139,7 @@ public class MainActivity extends AppCompatActivity
     private LineGraphSeries<DataPoint> seriesT;
     private int maxVibmm = 0;
     private boolean usbAttached = false;
+    private boolean connected = false;
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -163,28 +164,29 @@ public class MainActivity extends AppCompatActivity
         this.registerReceiver(mUsbReceiver, filter);
 
         // Insert Connection Screen
-        setCNscreen();
         log = new OnScreenLog(this, R.id.mnView);
+        log.setLogVisible(false);
+        setCNscreen();
         // Enable GW reading
         nodes.setReadEnable(GW, true);
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
         assert fab != null;
+        fab.hide();
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
                 if(comm!=null) {
-//                    if (!comm.getUartConfigured()) {
-//                        Snackbar.make(view, "Comm not ready yet...", Snackbar.LENGTH_SHORT)
-//                                .setAction("Action", null).show();
-//                        comm.SetConfig(baudRate,dataBits,stopBits,parity,flowControl);
-//                    } else {
-                    control.setRunning(!control.isRunning());
-                    setSsEnable(!isSsEnable());
-                    Snackbar.make(view, "Running is " + control.isRunning(), Snackbar.LENGTH_SHORT)
+                    if (comm.getUartConfigured()) {
+                        control.setRunning(!control.isRunning());
+                        setSsEnable(!isSsEnable());
+                        Snackbar.make(view, "Running is " + control.isRunning(), Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    } else {
+                    Snackbar.make(view, "Not connected...", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
-//                    }
+                    }
                 } else {
                     Snackbar.make(view, "Not connected...", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
@@ -196,10 +198,12 @@ public class MainActivity extends AppCompatActivity
         // Check whether we're recreating a previously destroyed instance
         if (savedInstanceState != null) {
             // Restore value of members from saved state
+            log.log("Saved Instance not null. Current App = " + savedInstanceState.getInt(CURRENT_VIEW));
             setCurrentApp(savedInstanceState.getInt(CURRENT_VIEW),false);
         } else {
             // Probably initialize members with default values for a new instance
-            setCurrentApp(0,false);
+            log.log("Saved Instance Null");
+            setCurrentApp(R.id.connect,false);
         }
 
 
@@ -212,9 +216,8 @@ public class MainActivity extends AppCompatActivity
                     baudRate = Integer.valueOf(sharedPref.getString("baud_rate", "19200"));
                     parity = Byte.valueOf(sharedPref.getString("parity", "0"));
                     if(comm != null) {
-                        if (comm.getUartConfigured()) {
-                            comm.SetConfig(baudRate, dataBits, stopBits, parity, flowControl);
-                        }
+                        if (comm.getUartConfigured())comm.SetConfig(baudRate, dataBits, stopBits, parity, flowControl);
+                        else comm.setParms(baudRate, dataBits, stopBits, parity, flowControl);
                     }
                 } else if(key.equals("modbus_slave_id")) {
                     mSlave = Byte.valueOf(sharedPref.getString("modbus_slave_id", "1"));
@@ -223,6 +226,7 @@ public class MainActivity extends AppCompatActivity
                     numRetries = Integer.valueOf(sharedPref.getString("number_retries", "10"));
                     timeout = Integer.valueOf(sharedPref.getString("modbus_timeout", "2000"));
                 }
+                log.log("BR=" + baudRate + " P=" + parity + " SL=" + mSlave + " NR=" + numRetries + " TO=" + timeout);
             }
         });
 
@@ -232,6 +236,8 @@ public class MainActivity extends AppCompatActivity
         slave1.setSlaveAddr(mSlave);
         numRetries = Integer.valueOf(sharedPref.getString("number_retries", "10"));
         timeout = Integer.valueOf(sharedPref.getString("modbus_timeout", "2000"));
+
+        log.log("BR=" + baudRate + " P=" + parity + " SL=" + mSlave + " NR=" + numRetries + " TO=" + timeout);
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -296,12 +302,14 @@ public class MainActivity extends AppCompatActivity
         super.onDestroy();
         control.onStop();
         if(comm!=null) {
-            if (comm.getUartConfigured()) {
-                master.stopComm();
-            }
             comm.disconnectFunction();
         }
         this.unregisterReceiver(mUsbReceiver);
+    }
+
+    @Override
+    protected void onNewIntent (Intent intent){
+        setCurrentApp(R.id.connect,false);
     }
 
     @Override
@@ -346,25 +354,10 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.connect) {
-            setCurrentApp(appConnect, false);
-        } else if (id == R.id.readReg) {
-            if(!rrScreen) setRRscreen();
-            setCurrentApp(appReadReg, false);
-        } else if (id == R.id.writeReg) {
-            if(!wrScreen) setWRscreen();
-            setCurrentApp(appWriteReg, false);
-        } else if (id == R.id.siteSurvey) {
-            if(!ssScreen) setSSscreen();
-            setCurrentApp(appSiteSurvey, false);
-        } else if (id == R.id.vibTemp) {
-            if(!vtScreen) setVTscreen();
-            setCurrentApp(appVibTemp, false);
-        } else if (id == R.id.nav_share) {
-            log.setLogVisible(true);
-        } else if (id == R.id.nav_send) {
-            log.setLogVisible(false);
-        }
+        if (id == R.id.settings) {
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
+        } else setCurrentApp(id, false);
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if(drawer != null) drawer.closeDrawer(GravityCompat.START);
@@ -375,7 +368,8 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         // Save the user's current game state
-        savedInstanceState.putInt(CURRENT_VIEW, mCurrentApp);
+        savedInstanceState.putInt(CURRENT_VIEW, mCurrentAppId);
+        log.log("Save Instance. Current APP = " + mCurrentAppId);
 
         // Always call the superclass so it can save the view hierarchy state
         super.onSaveInstanceState(savedInstanceState);
@@ -383,7 +377,7 @@ public class MainActivity extends AppCompatActivity
 
     // Ajusta a tela de Connect
     public void setCNscreen() {
-        View connect;
+        final View connect;
 
         // Se tela Connect não está ajustada
         if (!cnScreen) {
@@ -399,6 +393,9 @@ public class MainActivity extends AppCompatActivity
                     btnConnectUsb.setClickable(false);
                     btnConnectUsb.setEnabled(false);
                 } else {
+                    log.log("Attached");
+                    usbAttached = true;
+                    control.onStart();
                     btnConnectUsb.setClickable(true);
                     btnConnectUsb.setEnabled(true);
                 }
@@ -406,18 +403,30 @@ public class MainActivity extends AppCompatActivity
                     @Override
                     public void onClick(View view) {
                         Button btn = (Button) view;
-                        if (comm == null && usbAttached) {
-                            comm = new CommClass(getApplicationContext());
-                            master = new ModbusMaster(comm, slave1);
-                            log.log("Comm Class Created");
-                        }
-                        if (comm != null) {
-                            if (!comm.getUartConfigured()) {
-                                comm.ConfigDev();
+                        if(!connected) {
+                            if (comm == null && usbAttached) {
+                                comm = new CommClass(getApplicationContext());
+                                comm.SetConfig(baudRate, dataBits, stopBits, parity, flowControl);
+                                control.startMaster();
+                                log.log("Comm Class Created");
                             }
-                            if(comm.getUartConfigured()) btn.setText(R.string.disconnect_usb);
-                            else btn.setText(R.string.connect_usb);
-                            log.log("Comm configured " + comm.getUartConfigured());
+                            if (comm != null) {
+                                if (!comm.getUartConfigured()) {
+                                    comm.ConfigDev();
+                                    control.onStart();
+                                }
+                                connected = comm.getUartConfigured();
+                                if (connected) btn.setText(R.string.disconnect_usb);
+                                else btn.setText(R.string.connect_usb);
+                                log.log("Comm configured " + connected);
+                            }
+                        } else {
+                            connected = false;
+                            btn.setText(R.string.connect_usb);
+                            control.onStop();
+                            if(comm!=null) {
+                                comm.disconnectFunction();
+                            }
                         }
                     }
                 });
@@ -453,7 +462,8 @@ public class MainActivity extends AppCompatActivity
                         nodes.setReadEnable(position, !nodes.isReadEnable(position));
                         String item = "Read node " + position + " is " + nodes.isReadEnable(position);
                         arrayAdapter.notifyDataSetChanged();
-                        Toast.makeText(getBaseContext(), item, Toast.LENGTH_SHORT).show();
+                        Snackbar.make(view, item, Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
                         return true;
                     }
                 });
@@ -690,7 +700,7 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void onItemSelected(AdapterView<?> adapter, View v, int position, long arg3) {
                     setSsNode(Byte.parseByte((String) adapter.getItemAtPosition(position)));
-                    Snackbar.make(coordinatorLayoutView, "Site Survey node: " + getWrNode(), Snackbar.LENGTH_SHORT)
+                    Snackbar.make(coordinatorLayoutView, "Site Survey node: " + getSsNode(), Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
                 }
 
@@ -800,7 +810,8 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void onItemSelected(AdapterView<?> adapter, View v, int position, long arg3) {
                     setVtNode(Byte.parseByte((String) adapter.getItemAtPosition(position)));
-                    Toast.makeText(getApplicationContext(), "VT node: " + getVtNode(), Toast.LENGTH_SHORT).show();
+                    Snackbar.make(v, "VT node: " + getVtNode(), Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
                 }
 
                 @Override
@@ -861,9 +872,28 @@ public class MainActivity extends AppCompatActivity
         log.log("Count=" + graphCnt + " Vib=" + vibmm + " Temp=" + tempmm);
     }
 
-    public void setCurrentApp(int currentApp, boolean back) {
+    public void setCurrentApp(int currentAppId, boolean back) {
+        int currentApp = 0;
+        mCurrentAppId = currentAppId;
+
+        if (currentAppId == R.id.connect) {
+            currentApp = appConnect;
+        } else if (currentAppId == R.id.readReg) {
+            if(!rrScreen) setRRscreen();
+            currentApp = appReadReg;
+        } else if (currentAppId == R.id.writeReg) {
+            if(!wrScreen) setWRscreen();
+            currentApp = appWriteReg;
+        } else if (currentAppId == R.id.siteSurvey) {
+            if(!ssScreen) setSSscreen();
+            currentApp = appSiteSurvey;
+        } else if (currentAppId == R.id.vibTemp) {
+            if (!vtScreen) setVTscreen();
+            currentApp = appVibTemp;
+        }
+
         if(!back) {
-            backControlArray[backControl] = this.mCurrentApp;
+            backControlArray[backControl] = currentAppId;
             backControl++;
         }
         this.mCurrentApp = currentApp;
@@ -871,6 +901,14 @@ public class MainActivity extends AppCompatActivity
         viewFlipper.setDisplayedChild(this.mCurrentApp);
         control.setCurrentApp(this.mCurrentApp);
         setSsEnable(false);
+
+        if (currentApp == appConnect) fab.hide();
+        else fab.show();
+
+        if (currentApp == appReadReg) {
+            Snackbar.make(coordinatorLayoutView, "Long click on the Nodes you want to read.", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
 
         //log.log(System.getProperty("line.separator") + "App " + this.mCurrentApp);
         //tvLog.append(System.getProperty("line.separator") + "App " + this.mCurrentApp);
@@ -1031,9 +1069,6 @@ public class MainActivity extends AppCompatActivity
                 }
                 control.onStop();
                 if(comm!=null) {
-                    if (comm.getUartConfigured()) {
-                        master.stopComm();
-                    }
                     comm.disconnectFunction();
                 }
             } else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {

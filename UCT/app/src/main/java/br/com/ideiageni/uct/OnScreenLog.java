@@ -2,6 +2,9 @@ package br.com.ideiageni.uct;
 
 import android.app.Activity;
 import android.graphics.Color;
+import android.os.Handler;
+import android.support.design.widget.Snackbar;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -11,14 +14,19 @@ import android.widget.TextView;
  * Created by ariel on 07/07/2016.
  */
 public class OnScreenLog {
+    private static int timeoutTime = 1000;
     private static TextView tvLog;
     private static int logCount = 0;
     private static int logCountMax = 30;
     private static String[] logs = new String[logCountMax];
+    private static int cntClicks = 0;
+    private static boolean visibility = false;
+    private static MainActivity activity;
 
     public OnScreenLog(){}
 
     public OnScreenLog(Activity activity, int ViewID){
+        OnScreenLog.activity = (MainActivity) activity;
         tvLog = new TextView(activity.getApplicationContext());
         maintainLog("Log is working");
         tvLog.setLayoutParams(new RelativeLayout.LayoutParams(
@@ -28,6 +36,7 @@ public class OnScreenLog {
         tvLog.setBackgroundColor(Color.LTGRAY);
         tvLog.setAlpha((float) 0.4);
 
+        View v = null;
         LinearLayout linearLayout;
         RelativeLayout relativeLayout;
         try {
@@ -39,9 +48,37 @@ public class OnScreenLog {
         } catch (ClassCastException e) {relativeLayout = null;};
         if(linearLayout != null) {
             linearLayout.addView(tvLog);
+            v = linearLayout;
         } else if(relativeLayout != null) {
             relativeLayout.addView(tvLog);
+            v = relativeLayout;
         }
+
+        if(v != null) {
+            v.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    switch (event.getAction()) {
+                        case MotionEvent.ACTION_DOWN:
+                            cntClicks++;
+                            timerHandler.removeCallbacks(rTimeout);
+                            timerHandler.postDelayed(rTimeout, timeoutTime);
+//                            Snackbar.make(v, "Count Clicks = " + cntClicks, Snackbar.LENGTH_SHORT)
+//                                    .setAction("Action", null).show();
+
+                            if (cntClicks > 2) {
+                                setLogVisible(!visibility);
+                                timerHandler.removeCallbacks(rTimeout);
+                                cntClicks = 0;
+                            }
+                            break;
+
+                    }
+                    return false;
+                }
+            });
+        }
+
     }
 
     public void log (String text){
@@ -95,6 +132,7 @@ public class OnScreenLog {
     public void setLogVisible(boolean visibility){
         if(visibility) tvLog.setVisibility(View.VISIBLE);
         else tvLog.setVisibility(View.INVISIBLE);
+        OnScreenLog.visibility = visibility;
     }
 
     public static int getLogCountMax() {
@@ -105,4 +143,18 @@ public class OnScreenLog {
         OnScreenLog.logCountMax = logCountMax;
         logs = new String[logCountMax];
     }
+
+    Handler timerHandler = new Handler();
+
+    Runnable rTimeout = new Runnable() {
+
+        @Override
+        public void run() {
+            cntClicks = 0;
+//            Snackbar.make(activity.coordinatorLayoutView, "Timeout. Count Clicks = " + cntClicks, Snackbar.LENGTH_SHORT)
+//                    .setAction("Action", null).show();
+
+        }
+    };
+
 }

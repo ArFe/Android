@@ -35,6 +35,8 @@ public class CommClass {
 
     private boolean uartConfigured = false;
 
+    private OnScreenLog log = new OnScreenLog();
+
     public CommClass(Context comContext){
         context = comContext;
         try {
@@ -96,6 +98,14 @@ public class CommClass {
         }
     }
 
+    public void setParms(int baud, byte dataBits, byte stopBits, byte iParity, byte iFlowControl){
+        baudRate = baud;
+        stopBit = stopBits;
+        dataBit = dataBits;
+        parity = iParity;
+        flowControl = iFlowControl;
+    }
+
     public void SetConfig(int baud, byte dataBits, byte stopBits, byte iParity, byte iFlowControl){
         baudRate = baud;
         stopBit = stopBits;
@@ -108,6 +118,9 @@ public class CommClass {
 
 
     public void ConfigPort(){
+
+        log.log(baudRate + "-" + parity);
+
         if (!ftDev.isOpen()) {
             Log.e("j2xx", "SetConfig: device not open");
             return;
@@ -164,6 +177,7 @@ public class CommClass {
                 break;
         }
 
+        log.log(dataBit + stopBit + parity);
         ftDev.setDataCharacteristics(dataBit, stopBit, parity);
 
         short flowCtrlSetting;
@@ -190,7 +204,7 @@ public class CommClass {
         ftDev.setFlowControl(flowCtrlSetting, (byte) 0x0b, (byte) 0x0d);
 
         uartConfigured = true;
-        Toast.makeText(context, "ConfigPort done " + ftDev.getQueueStatus(), Toast.LENGTH_SHORT).show();
+//        Toast.makeText(context, "ConfigPort done " + ftDev.getQueueStatus(), Toast.LENGTH_SHORT).show();
     }
 
     public void updatePortNumberSelector()
@@ -199,17 +213,17 @@ public class CommClass {
 
         if(DevCount == 2)
         {
-            Toast.makeText(context, "2 port device attached", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, "2 port device attached", Toast.LENGTH_SHORT).show();
             //portSpinner.setOnItemSelectedListener(new MyOnPortSelectedListener());
         }
         else if(DevCount == 4)
         {
-            Toast.makeText(context, "4 port device attached", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, "4 port device attached", Toast.LENGTH_SHORT).show();
             //portSpinner.setOnItemSelectedListener(new MyOnPortSelectedListener());
         }
         else
         {
-            Toast.makeText(context, "1 port device attached", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, "1 port device attached", Toast.LENGTH_SHORT).show();
             //portSpinner.setOnItemSelectedListener(new MyOnPortSelectedListener());
         }
 
@@ -238,10 +252,10 @@ public class CommClass {
 
     public void disconnectFunction()
     {
-//        DevCount = -1;
+        DevCount = -1;
         currentIndex = -1;
-//        uartConfigured = false;
-//        openIndex = 0;
+        uartConfigured = false;
+        openIndex = 0;
         try {
             Thread.sleep(50);
         }
@@ -271,25 +285,25 @@ public class CommClass {
             }
             uartConfigured = false;
         }else{
-            Toast.makeText(context, "Device port " + tmpProtNumber + " is already opened", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, "Device port " + tmpProtNumber + " is already opened", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if(ftDev == null)
         {
-            Toast.makeText(context,"open device port("+tmpProtNumber+") NG, ftDev == null", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context,"open device port("+tmpProtNumber+") NG, ftDev == null", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (ftDev.isOpen())
         {
             currentIndex = openIndex;
-            Toast.makeText(context, "open device port(" + tmpProtNumber + ") OK", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, "open device port(" + tmpProtNumber + ") OK", Toast.LENGTH_SHORT).show();
             SetConfig(baudRate, dataBit, stopBit, parity, flowControl);
         }
         else
         {
-            Toast.makeText(context, "open device port(" + tmpProtNumber + ") NG", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, "open device port(" + tmpProtNumber + ") NG", Toast.LENGTH_SHORT).show();
             //Toast.makeText(DeviceUARTContext, "Need to get permission!", Toast.LENGTH_SHORT).show();
         }
     }
@@ -331,7 +345,7 @@ public class CommClass {
             if(uartConfigured) iAvailable = ftDev.getQueueStatus();
             if(iAvailable>0){
                 flush(iAvailable);
-                Toast.makeText(context, "Comm Class - Flushed", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(context, "Comm Class - Flushed", Toast.LENGTH_SHORT).show();
             }
             else timerHandler.postDelayed(this, 500);
         }

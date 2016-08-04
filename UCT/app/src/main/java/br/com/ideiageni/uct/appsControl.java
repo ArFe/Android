@@ -68,7 +68,7 @@ public class AppsControl {
     private OnScreenLog log = new OnScreenLog();
 
      public AppsControl (MainActivity context){
-        this.mainActivity = context;
+         this.mainActivity = context;
          onStart();
     }
 
@@ -221,7 +221,7 @@ public class AppsControl {
                             byte mAddrLo = (byte) (addr & 0x00FF);
                             byte mAddrHi = (byte) (addr / 256 & 0x00FF);
 //                            log.log("New Read. Addr = " + mAddrLo);
-                            mainActivity.master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
+                            master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
                             appState = WAIT_DONE;
                             break;
                         }
@@ -233,14 +233,14 @@ public class AppsControl {
                 break;
 
             case WAIT_DONE:
-                if(mainActivity.master.isDone()) {
+                if(master.isDone()) {
                     mainActivity.notifyDataSetChanged();
-                    if(mainActivity.master.getStatus()== ModbusMaster.ERROR){
-                        mainActivity.master.clearStatus();
+                    if(master.getStatus()== ModbusMaster.ERROR){
+                        master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
-                    } else if(mainActivity.master.getStatus()== ModbusMaster.TIMEOUT){
-                        mainActivity.master.clearStatus();
+                    } else if(master.getStatus()== ModbusMaster.TIMEOUT){
+                        master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
                     } else {// Case not error, jump to next node
@@ -261,7 +261,7 @@ public class AppsControl {
                 break;
 
             case STOP:
-                Snackbar.make(mainActivity.coordinatorLayoutView, "Long click on the Nodes you want to read.", Snackbar.LENGTH_SHORT)
+                Snackbar.make(mainActivity.coordinatorLayoutView, "Long click on the Nodes you want to read.", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 appState = START;
                 timerHandler.removeCallbacks(rTimeout);
@@ -310,7 +310,7 @@ public class AppsControl {
                             byte dataLo = (byte) (mainActivity.getWriteReg(i) & 0x00FF);
                             byte dataHi = (byte) (mainActivity.getWriteReg(i) / 256 & 0x00FF);
                             byte[] data = {dataHi, dataLo};
-                            mainActivity.master.writeHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo), data);
+                            master.writeHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo), data);
                             appState = WAIT_RETURN;
                             break;
                         }
@@ -323,13 +323,13 @@ public class AppsControl {
                 break;
 
             case WAIT_RETURN:
-                if(mainActivity.master.isDone()) {
-                    if(mainActivity.master.getStatus()== ModbusMaster.ERROR){
-                        mainActivity.master.clearStatus();
+                if(master.isDone()) {
+                    if(master.getStatus()== ModbusMaster.ERROR){
+                        master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
-                    } else if(mainActivity.master.getStatus()== ModbusMaster.TIMEOUT){
-                        mainActivity.master.clearStatus();
+                    } else if(master.getStatus()== ModbusMaster.TIMEOUT){
+                        master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
                     } else {// Case not error, jump to next Register
@@ -372,20 +372,20 @@ public class AppsControl {
                 mAddrHi = (byte) (addr / 256 & 0x00FF);
                 mLenLo = 1; // Command + node address
                 data = new byte[] {ssCmd,node};
-                mainActivity.master.writeHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo), data);
+                master.writeHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo), data);
                 appState = WAIT_START;
                 break;
 
             case WAIT_START:
-                if(mainActivity.master.isDone()) {
-                    if(mainActivity.master.getStatus()== ModbusMaster.ERROR){
+                if(master.isDone()) {
+                    if(master.getStatus()== ModbusMaster.ERROR){
                         appState = START;
-                        mainActivity.master.clearStatus();
+                        master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
-                    } else if(mainActivity.master.getStatus()== ModbusMaster.TIMEOUT){
+                    } else if(master.getStatus()== ModbusMaster.TIMEOUT){
                         appState = START;
-                        mainActivity.master.clearStatus();
+                        master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
                     } else appState = READ_SS;
@@ -399,20 +399,20 @@ public class AppsControl {
                 mAddrHi = (byte) (addr / 256 & 0x00FF);
                 mLenLo = 16;
 //                log.log("New Read. Addr = " + mAddrLo);
-                mainActivity.master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
+                master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
                 appState = WAIT_READ_SS;
                 break;
 
             case WAIT_READ_SS:
-                if(mainActivity.master.isDone()) {
-                    if(mainActivity.master.getStatus()== ModbusMaster.ERROR){
+                if(master.isDone()) {
+                    if(master.getStatus()== ModbusMaster.ERROR){
                         appState = READ_SS;
-                        mainActivity.master.clearStatus();
+                        master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
-                    } else if(mainActivity.master.getStatus()== ModbusMaster.TIMEOUT){
+                    } else if(master.getStatus()== ModbusMaster.TIMEOUT){
                         appState = READ_SS;
-                        mainActivity.master.clearStatus();
+                        master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
                     } else if(!mainActivity.isSsEnable()) appState = STOP_SS;
@@ -432,18 +432,18 @@ public class AppsControl {
                 mAddrHi = (byte) (addr / 256 & 0x00FF);
                 mLenLo = 1; // Command + node address
                 data = new byte[] {ssCmd,0};
-                mainActivity.master.writeHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo), data);
+                master.writeHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo), data);
                 appState = WAIT_RETURN;
                 break;
 
             case WAIT_RETURN:
-                if(mainActivity.master.isDone()) {
-                    if(mainActivity.master.getStatus()== ModbusMaster.ERROR){
-                        mainActivity.master.clearStatus();
+                if(master.isDone()) {
+                    if(master.getStatus()== ModbusMaster.ERROR){
+                        master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
-                    } else if(mainActivity.master.getStatus()== ModbusMaster.TIMEOUT){
-                        mainActivity.master.clearStatus();
+                    } else if(master.getStatus()== ModbusMaster.TIMEOUT){
+                        master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
                     } else appState = STOP;
@@ -476,12 +476,12 @@ public class AppsControl {
                 byte mAddrLo = (byte) (addr & 0x00FF);
                 byte mAddrHi = (byte) (addr / 256 & 0x00FF);
 //                log.log("New Read. Addr = " + mAddrLo);
-                mainActivity.master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
+                master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
                 appState = WAIT_DONE;
                 break;
 
             case WAIT_DONE:
-                if(mainActivity.master.isDone()) {
+                if(master.isDone()) {
                     mainActivity.notifyDataSetChanged();
                     if (autoReadVT) {
                         timerHandler.postDelayed(scanNodes, autoReadTime);
@@ -564,6 +564,11 @@ public class AppsControl {
 
     public void onStop(){
         started = false;
+        if(mainActivity.comm!=null) {
+            if (mainActivity.comm.getUartConfigured()) {
+            master.stopComm();
+            }
+        }
         timerHandler.removeCallbacks(showStatus);
         timerHandler.removeCallbacks(scanNodes);
         timerHandler.removeCallbacks(mainRun);
@@ -653,5 +658,9 @@ public class AppsControl {
 
     public void setTimeoutTime(int timeoutTime) {
         this.timeoutTime = timeoutTime;
+    }
+
+    public void startMaster(){
+        master = new ModbusMaster(mainActivity.comm, mainActivity.slave1);
     }
 }

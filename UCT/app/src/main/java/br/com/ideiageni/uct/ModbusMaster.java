@@ -55,6 +55,7 @@ public class ModbusMaster {
             setStatus(READING);
 
             sendData = slave.readSend(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo);
+            //log.log(sendData);
             comm.SendMessage(sendData);
             rt = new ReadThread();
             rt.execute(slave.getExpectedBytes());
