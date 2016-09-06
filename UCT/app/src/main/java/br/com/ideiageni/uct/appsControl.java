@@ -491,7 +491,7 @@ public class AppsControl {
                 break;
 
             case WAIT_AUTO_READ:
-                if(isNewApp()||!isRunning()||!isAutoReadRR()) appState = STOP;
+                if(isNewApp()||!isRunning()||!isAutoReadVT()) appState = STOP;
                 else if(isScan()) {
                     appState = START;
                     setScan(false);

@@ -112,8 +112,11 @@ public class CommClass {
         dataBit = dataBits;
         parity = iParity;
         flowControl = iFlowControl;
+        if(!getftDevNull()) {
+            ConfigPort();
+        }
 
-        ConfigPort();
+
     }
 
 

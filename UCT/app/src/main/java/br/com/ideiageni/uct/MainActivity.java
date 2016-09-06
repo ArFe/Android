@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.graphics.Rect;
 import android.hardware.usb.UsbManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
@@ -389,11 +390,20 @@ public class MainActivity extends AppCompatActivity
             Button btnConnectUsb = (Button) viewFlipper.getChildAt(appConnect).findViewById(R.id.btConnectUsb);
             if (btnConnectUsb != null) {
                 UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);
-                if(manager.getDeviceList().isEmpty()) {
-                    btnConnectUsb.setClickable(false);
-                    btnConnectUsb.setEnabled(false);
+                log.log(manager.getDeviceList().toString());
+                if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    if(manager.getDeviceList().isEmpty()) {
+                        btnConnectUsb.setClickable(false);
+                        btnConnectUsb.setEnabled(false);
+                    } else {
+                        log.log("Attached");
+                        usbAttached = true;
+                        control.onStart();
+                        btnConnectUsb.setClickable(true);
+                        btnConnectUsb.setEnabled(true);
+                    }
                 } else {
-                    log.log("Attached");
+                    log.log("Version " + android.os.Build.VERSION.SDK_INT);
                     usbAttached = true;
                     control.onStart();
                     btnConnectUsb.setClickable(true);
@@ -410,7 +420,7 @@ public class MainActivity extends AppCompatActivity
                                 control.startMaster();
                                 log.log("Comm Class Created");
                             }
-                            if (comm != null) {
+                            if (comm != null && !comm.getftDevNull()) {
                                 if (!comm.getUartConfigured()) {
                                     comm.ConfigDev();
                                     control.onStart();
@@ -419,6 +429,10 @@ public class MainActivity extends AppCompatActivity
                                 if (connected) btn.setText(R.string.disconnect_usb);
                                 else btn.setText(R.string.connect_usb);
                                 log.log("Comm configured " + connected);
+                            } else {
+                                btn.setClickable(false);
+                                btn.setText(R.string.connect_usb);
+                                btn.setEnabled(false);
                             }
                         } else {
                             connected = false;

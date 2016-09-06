@@ -13,7 +13,7 @@
         android:title="@string/pref_title_baud_rate" />
 
     <ListPreference
-        android:defaultValue="none"
+        android:defaultValue="0"
         android:entries="@array/parity"
         android:entryValues="@array/parity_int"
         android:key="parity"
