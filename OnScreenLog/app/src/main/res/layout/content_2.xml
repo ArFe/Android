@@ -10,7 +10,11 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="br.com.ideiageni.onscreenlog.Activity2"
+    tools:context="br.com.ideiageni.onscreenlogSample.Activity2"
     tools:showIn="@layout/activity_2">
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Activity 2!" />
 </RelativeLayout>
