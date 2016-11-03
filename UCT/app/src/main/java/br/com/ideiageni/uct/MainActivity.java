@@ -5,11 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.graphics.Canvas;
-import android.graphics.ColorFilter;
-import android.graphics.PixelFormat;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.hardware.usb.UsbManager;
 import android.net.Uri;
 import android.os.Build;
@@ -18,8 +14,6 @@ import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.media.RatingCompat;
-import android.support.v7.graphics.drawable.DrawableWrapper;
 import android.support.v7.widget.AppCompatCheckBox;
 import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.AppCompatTextView;
@@ -36,7 +30,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -62,7 +55,9 @@ import com.jjoe64.graphview.helper.StaticLabelsFormatter;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static android.widget.RelativeLayout.BELOW;
 import static android.widget.RelativeLayout.RIGHT_OF;
@@ -74,6 +69,11 @@ public class MainActivity extends AppCompatActivity
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
     public static final int BLUETOOTH = 1;
     public static final int USB = 2;
+
+    public static final int labelID = 100;
+    public static final int spID = 200;
+    public static final int pbID = 300;
+    public static final int tvID = 400;
 
     private static final int MAX_GRAPH_COUNT = 30 * 60; //30 amostras por minuto, 60 minutos
     private static final String CURRENT_VIEW = "currentView";
@@ -991,9 +991,10 @@ public class MainActivity extends AppCompatActivity
                 tvIOs[i] = new TextView(this);
                 pbIOs[i] = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
                 pbIOs[i].setProgressDrawable(ContextCompat.getDrawable(getApplicationContext(),R.drawable.green_pb));
-                labelIOs[i].setId(i+100);
-                tvIOs[i].setId(i+200);
-                pbIOs[i].setId(i+300);
+                labelIOs[i].setId(i+labelID);
+                spIOs[i].setId(i+spID);
+                tvIOs[i].setId(i+tvID);
+                pbIOs[i].setId(i+pbID);
 
                 if(i==0) {
                     labelLP[i].addRule(BELOW, R.id.tvIOs);
@@ -1027,11 +1028,31 @@ public class MainActivity extends AppCompatActivity
                 pbIOs[i].setProgress(0);
                 pbIOs[i].setMax(1);
 
-                IOtypes[i] = new ArrayList<>();
-                for (int j = 1; j <= numNodes; j++) IOtypes[i].add(String.valueOf(j));
+                IOtypes[i] = new ArrayList<>(Arrays.asList(getResources().getStringArray(R.array.io_types)));
                 ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.io_spinner, IOtypes[i]); //selected item will look like a spinner set from XML
                 spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 spIOs[i].setAdapter(spinnerArrayAdapter);
+                spIOs[i].setTag(i);
+
+                spIOs[i].setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> adapter, View v, int position, long arg3) {
+                        int i = (int) adapter.getTag();
+                        if(position>0) {
+                            pbIOs[i].setMax(0xFFFF);
+                            pbIOs[i].getLayoutParams().width = RelativeLayout.LayoutParams.MATCH_PARENT;
+                        } else {
+                            pbIOs[i].setMax(1);
+                            pbIOs[i].getLayoutParams().width = 120;
+                        }
+                        pbIOs[i].invalidate();
+                        pbIOs[i].requestLayout();
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parentView) {
+                    }
+                });
             }
 
             ArrayList<String> nodeNums = new ArrayList<>();
@@ -1060,6 +1081,9 @@ public class MainActivity extends AppCompatActivity
             ioScreen = true;
         }
     }
+
+
+
 
     public void updateRRScreen () {
         //for(int i=0;i<numNodes;i++) nodes[i].setValues(Arrays.copyOfRange(modbusArray,i*16+1,(i+1)*16));
@@ -1115,7 +1139,8 @@ public class MainActivity extends AppCompatActivity
 
         for(int i=0; i<numIOs; i++){
             pbIOs[i].setProgress(data[i]);
-            tvIOs[i].setText(String.valueOf(data[i]));
+            String temp = String.valueOf(data[i]);
+            tvIOs[i].setText(temp);
         }
     }
 
