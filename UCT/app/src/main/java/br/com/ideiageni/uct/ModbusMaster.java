@@ -2,6 +2,7 @@ package br.com.ideiageni.uct;
 
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.util.Log;
 
 /**
  * Created by ariel on 05/07/2016.
@@ -15,7 +16,8 @@ public class ModbusMaster {
     static int TIMEOUT = 99;
     static int ERROR = 999;
 
-    private CommClass comm;
+    private USBCommClass usbComm;
+    private BTCommClass btComm;
     private Modbus slave;
     private ReadThread rt;
     private byte mCmd = 90;
@@ -28,6 +30,7 @@ public class ModbusMaster {
     private boolean busy = false;
     private boolean done = true;
     private int status = IDLE;
+    private int USBBT = 0;
 
     private int timeOutTime = 2000;
 
@@ -36,9 +39,16 @@ public class ModbusMaster {
 
     private OnScreenLog log = new OnScreenLog();
 
-    public ModbusMaster(CommClass iComm, Modbus iSlave) {
+    public ModbusMaster(USBCommClass iComm, Modbus iSlave) {
         slave = iSlave;
-        comm = iComm;
+        usbComm = iComm;
+        USBBT = MainActivity.USB;
+    }
+
+    public ModbusMaster(BTCommClass iComm, Modbus iSlave) {
+        slave = iSlave;
+        btComm = iComm;
+        USBBT = MainActivity.BLUETOOTH;
     }
 
     public boolean readHR (Modbus.commBundle bundle){
@@ -56,7 +66,7 @@ public class ModbusMaster {
 
             sendData = slave.readSend(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo);
             //log.log(sendData);
-            comm.SendMessage(sendData);
+            SendMessage(sendData);
             rt = new ReadThread();
             rt.execute(slave.getExpectedBytes());
             timerHandler.postDelayed(timeout, getTimeOutTime());
@@ -81,7 +91,7 @@ public class ModbusMaster {
             setStatus(WRITING);
 
             sendData = slave.writeSend(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo, data);
-            comm.SendMessage(sendData);
+            SendMessage(sendData);
 //            log.log(mCmd + " " + mAddrHi  + " " +  mAddrLo + " " +  mLenHi + " " +  mLenLo + " " +  data[1]  + " " + data[0]);
             rt = new ReadThread();
             rt.execute(slave.getExpectedBytes());
@@ -99,16 +109,19 @@ public class ModbusMaster {
             int iAvailable = 0;
             int expectedBytes = params[0];
 
+            Log.d("Mobbus Master", "bytes expected available = " + expectedBytes);
             while (iAvailable < expectedBytes) {
-                iAvailable = comm.getAvailable();
-//                if(iAvailable == 1) comm.flush(iAvailable);
+                iAvailable = getAvailable();
                 if (isCancelled()) break;
             }
-            return comm.ReceiveMessage(iAvailable);
+            Log.d("Mobbus Master", "bytes available = " + getAvailable());
+            return ReceiveMessage(iAvailable);
         }
 
         @Override
         protected void onPostExecute(byte[] readData) {
+            Log.d("Mobbus Master", "bytes available = " + getAvailable());
+            log.log("bytes available = " + getAvailable());
             int result = 0;
             if(status == READING) result = slave.readReceive(mCmd, mAddrHi, mAddrLo, mLenHi, mLenLo, readData);
             if(status == WRITING) result = slave.writeReceive(sendData, readData);
@@ -130,8 +143,8 @@ public class ModbusMaster {
     }
 
     // runs without a timer by reposting this handler at the end of the runnable
-    Handler timerHandler = new Handler();
-    Runnable timeout = new Runnable() {
+    private Handler timerHandler = new Handler();
+    private Runnable timeout = new Runnable() {
 
         @Override
         public void run() {
@@ -142,16 +155,32 @@ public class ModbusMaster {
             timerHandler.removeCallbacks(postStatus);
         }
     };
-    Runnable postStatus = new Runnable() {
+    private Runnable postStatus = new Runnable() {
 
         @Override
         public void run() {
-            int iAvailable = comm.getAvailable();
+            int iAvailable = getAvailable();
 //            log.log("iAvailable " + iAvailable + " expectedBytes " + slave.getExpectedBytes());
             timerHandler.postDelayed(postStatus, 1000);
         }
     };
 
+    private void SendMessage (byte[] sendData){
+        if(USBBT == MainActivity.USB) usbComm.SendMessage(sendData);
+        if(USBBT == MainActivity.BLUETOOTH) btComm.SendMessage(sendData);
+    }
+
+    private byte[] ReceiveMessage (int iAvailable){
+        if(USBBT == MainActivity.USB) return usbComm.ReceiveMessage(iAvailable);
+        if(USBBT == MainActivity.BLUETOOTH) return btComm.ReceiveMessage(iAvailable);
+        else return null;
+    }
+
+    private int getAvailable (){
+        if(USBBT == MainActivity.USB) return usbComm.getAvailable();
+        if(USBBT == MainActivity.BLUETOOTH) return btComm.getAvailable();
+        else return 0;
+    }
 
     //Getters and Setters
 

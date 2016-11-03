@@ -24,12 +24,13 @@ public class AppsControl {
     private static final int READ_SS = 13;
     private static final int WAIT_START = 14;
     private static final int WAIT_READ_SS = 15;
-    private static final int VIBRATION_TEMPERATURE = 16;
     private static final int WAIT_DONE = 16;
     private static final int DISCONNECT = 17;
     private static final int CREATE_DEV_LIST = 18;
     private static final int CONFIG = 19;
     private static final int CONFIGURED = 20;
+    private static final int VIBRATION_TEMPERATURE = 21;
+    private static final int IO = 22;
     private static final int TIMEOUT = 99;
 
     private int cycleTime = 100;
@@ -92,6 +93,7 @@ public class AppsControl {
                 else if (app == mainActivity.getAppWriteReg()) mainState = WRITE_REGISTERS;
                 else if (app == mainActivity.getAppSiteSurvey()) mainState = SITE_SURVEY;
                 else if (app == mainActivity.getAppVibTemp()) mainState = VIBRATION_TEMPERATURE;
+                else if (app == mainActivity.getAppIO()) mainState = IO;
 //                log.log("App = " + app + " Vib temp = " + mainActivity.getAppVibTemp());
                 timerHandler.postDelayed(rTimeout, timeoutTime);
                 break;
@@ -118,6 +120,11 @@ public class AppsControl {
 
             case VIBRATION_TEMPERATURE:
                 if (appVT()) mainState = STOP;
+                if(timeout) mainState = TIMEOUT;
+                break;
+
+            case IO:
+                if (appIO()) mainState = STOP;
                 if(timeout) mainState = TIMEOUT;
                 break;
 
@@ -152,24 +159,24 @@ public class AppsControl {
                 break;
 
             case CREATE_DEV_LIST:
-                if(mainActivity.comm.getDevCount() <= 0) mainActivity.comm.createDeviceList();
+                if(mainActivity.usbComm.getDevCount() <= 0) mainActivity.usbComm.createDeviceList();
                 else appState = CONNECT;
                 break;
 
             case CONNECT:
-                if((mainActivity.comm.getftDevNull()||!mainActivity.comm.ftDev.isOpen())
-                        && mainActivity.comm.getDevCount() > 0) mainActivity.comm.connectFunction();
+                if((mainActivity.usbComm.getftDevNull()||!mainActivity.usbComm.ftDev.isOpen())
+                        && mainActivity.usbComm.getDevCount() > 0) mainActivity.usbComm.connectFunction();
                 else appState = CONFIG;
                 break;
 
             case CONFIG:
-                if (!(mainActivity.comm.isUartConfigured() && !mainActivity.comm.getftDevNull()
-                        && mainActivity.comm.getDevCount() > 0)) mainActivity.comm.ConfigPort();
+                if (!(mainActivity.usbComm.isUartConfigured() && !mainActivity.usbComm.getftDevNull()
+                        && mainActivity.usbComm.getDevCount() > 0)) mainActivity.usbComm.ConfigPort();
                 else appState = CONFIGURED;
                 break;
 
             case CONFIGURED:
-                if(mainActivity.comm.getUartConfigured()) {
+                if(mainActivity.usbComm.getUartConfigured()) {
                     commConfigured = true;
                     appState = START;
                     mainActivity.setFABCloseClearCancel();
@@ -179,7 +186,7 @@ public class AppsControl {
                 break;
 
             case DISCONNECT:
-                mainActivity.comm.disconnectFunction();
+                mainActivity.usbComm.disconnectFunction();
                 commConfigured = false;
                 appState = START;
                 mainActivity.setFABPlay();
@@ -415,7 +422,7 @@ public class AppsControl {
                         master.clearStatus();
                         Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
-                    } else if(!mainActivity.isSsEnable()) appState = STOP_SS;
+                    } else if(!mainActivity.isRunning()) appState = STOP_SS;
                     else {
                         appState = READ_SS;
                         mainActivity.updateSSScreen();
@@ -512,6 +519,62 @@ public class AppsControl {
         return result;
     }
 
+    private boolean appIO(){
+        boolean result = false;
+        switch (appState) {
+            case START:
+                appState = RUN;
+                break;
+
+            case RUN:
+                node = mainActivity.getIONode();
+                mLenLo = 16;
+                int addr = node * MainActivity.numReg;
+                byte mAddrLo = (byte) (addr & 0x00FF);
+                byte mAddrHi = (byte) (addr / 256 & 0x00FF);
+                master.readHR(new Modbus.commBundle(mAddrHi, mAddrLo, mLenHi, mLenLo));
+                appState = WAIT_DONE;
+                break;
+
+            case WAIT_DONE:
+                if(master.isDone()) {
+                    mainActivity.notifyDataSetChanged();
+                    if(master.getStatus()== ModbusMaster.ERROR){
+                        master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Error", Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    } else if(master.getStatus()== ModbusMaster.TIMEOUT){
+                        master.clearStatus();
+                        Snackbar.make(mainActivity.coordinatorLayoutView, "Comm Timeout", Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    }else {
+                        mainActivity.updateIOScreen();
+                        if(!mainActivity.isRunning()) appState = STOP;
+                        else {
+                            appState = RUN;
+                            timerHandler.removeCallbacks(rTimeout);
+                            timerHandler.postDelayed(rTimeout, timeoutTime);
+                        }
+                    }
+                } else if(isNewApp()) appState = STOP;
+                else if(timeout) appState = START;
+                break;
+
+            case STOP:
+                appState = START;
+                timerHandler.removeCallbacks(rTimeout);
+                setScan(false);
+                result = true;
+                break;
+
+            default:
+                appState = START;
+        }
+
+        return result;
+    }
+
+
     // runs without a timer by reposting this handler at the end of the runnable
     Handler timerHandler = new Handler();
 
@@ -564,8 +627,8 @@ public class AppsControl {
 
     public void onStop(){
         started = false;
-        if(mainActivity.comm!=null) {
-            if (mainActivity.comm.getUartConfigured()) {
+        if(mainActivity.usbComm !=null) {
+            if (mainActivity.usbComm.getUartConfigured()) {
             master.stopComm();
             }
         }
@@ -660,7 +723,8 @@ public class AppsControl {
         this.timeoutTime = timeoutTime;
     }
 
-    public void startMaster(){
-        master = new ModbusMaster(mainActivity.comm, mainActivity.slave1);
+    public void startMaster(int USBBT){
+        if(USBBT == MainActivity.USB) master = new ModbusMaster(mainActivity.usbComm, mainActivity.slave1);
+        else if(USBBT == MainActivity.BLUETOOTH) master = new ModbusMaster(mainActivity.btComm, mainActivity.slave1);
     }
 }

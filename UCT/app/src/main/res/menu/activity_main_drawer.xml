@@ -12,6 +12,8 @@
             android:title="@string/SiteSurveyText" />
         <item android:id="@+id/vibTemp" android:icon="@android:drawable/ic_menu_rotate"
             android:title="@string/vibTempText" />
+        <item android:id="@+id/io" android:icon="@android:drawable/ic_input_get"
+            android:title="@string/iosText" />
      </group>
 
     <group android:checkableBehavior="none">

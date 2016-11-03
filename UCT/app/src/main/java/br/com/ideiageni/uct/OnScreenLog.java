@@ -21,7 +21,8 @@ public class OnScreenLog {
     private static String[] logs = new String[logCountMax];
     private static int cntClicks = 0;
     private static boolean visibility = false;
-    private static MainActivity activity;
+    private static Activity activity;
+    private int maxClicks = 5;
 
     public OnScreenLog(){}
 
@@ -66,7 +67,7 @@ public class OnScreenLog {
 //                            Snackbar.make(v, "Count Clicks = " + cntClicks, Snackbar.LENGTH_SHORT)
 //                                    .setAction("Action", null).show();
 
-                            if (cntClicks > 2) {
+                            if (cntClicks > maxClicks-1) {
                                 setLogVisible(!visibility);
                                 timerHandler.removeCallbacks(rTimeout);
                                 cntClicks = 0;
@@ -142,6 +143,14 @@ public class OnScreenLog {
     public static void setLogCountMax(int logCountMax) {
         OnScreenLog.logCountMax = logCountMax;
         logs = new String[logCountMax];
+    }
+
+    public int getMaxClicks() {
+        return maxClicks;
+    }
+
+    public void setMaxClicks(int maxClicks) {
+        this.maxClicks = maxClicks;
     }
 
     Handler timerHandler = new Handler();

@@ -11,7 +11,7 @@ import com.ftdi.j2xx.FT_Device;
 /**
  * Created by ariel on 30/11/2015.
  */
-public class CommClass {
+public class USBCommClass {
 
     public static D2xxManager ftD2xx = null;
 
@@ -37,7 +37,7 @@ public class CommClass {
 
     private OnScreenLog log = new OnScreenLog();
 
-    public CommClass(Context comContext){
+    public USBCommClass(Context comContext){
         context = comContext;
         try {
             ftD2xx = D2xxManager.getInstance(context);

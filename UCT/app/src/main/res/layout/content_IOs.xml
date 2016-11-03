@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/iosView"
+    android:visibility="visible"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context=".MainActivity">
+    <!--tools:showIn="@layout/app_bar_main">-->
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/ioTitle"
+        android:id="@+id/tvIOs"
+        android:layout_alignParentTop="true" />
+
+    <Spinner
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/nodeNumIO"
+        android:textSize="60sp"
+        android:layout_alignTop="@+id/tvIOs"
+        android:layout_toRightOf="@+id/tvIOs"
+        android:layout_marginLeft="15dp"
+        android:layout_marginStart="15dp" />
+
+    <ProgressBar
+        style="?android:attr/progressBarStyleHorizontal"
+        android:visibility="invisible"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:progress="0"
+        android:id="@+id/pbIO01"
+        android:max="1"
+        android:progressTint="#00ff00"
+        android:progressDrawable="@drawable/green_pb"
+        android:indeterminate="false"
+        android:layout_below="@+id/IO01"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <!--<ProgressBar-->
+        <!--style="?android:attr/progressBarStyleHorizontal"-->
+        <!--android:layout_width="60dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:progress="0"-->
+        <!--android:id="@+id/pbIO02"-->
+        <!--android:max="1"-->
+        <!--android:progressTint="#00ff00"-->
+        <!--android:progressDrawable="@drawable/green_pb"-->
+        <!--android:layout_below="@+id/IO02"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true" />-->
+
+    <!--<ProgressBar-->
+        <!--style="?android:attr/progressBarStyleHorizontal"-->
+        <!--android:layout_width="60dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:progress="0"-->
+        <!--android:id="@+id/pbIO03"-->
+        <!--android:max="1"-->
+        <!--android:progressTint="#00ff00"-->
+        <!--android:progressDrawable="@drawable/green_pb"-->
+        <!--android:layout_below="@+id/IO03"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true" />-->
+
+    <!--<ProgressBar-->
+        <!--style="?android:attr/progressBarStyleHorizontal"-->
+        <!--android:layout_width="60dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:progress="0"-->
+        <!--android:id="@+id/pbIO04"-->
+        <!--android:max="1"-->
+        <!--android:progressTint="#00ff00"-->
+        <!--android:progressDrawable="@drawable/green_pb"-->
+        <!--android:layout_below="@+id/IO04"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true" />-->
+
+    <!--<ProgressBar-->
+        <!--style="?android:attr/progressBarStyleHorizontal"-->
+        <!--android:layout_width="60dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:progress="0"-->
+        <!--android:id="@+id/pbIO05"-->
+        <!--android:max="1"-->
+        <!--android:progressTint="#00ff00"-->
+        <!--android:progressDrawable="@drawable/green_pb"-->
+        <!--android:layout_below="@+id/IO05"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true" />-->
+
+    <!--<ProgressBar-->
+        <!--style="?android:attr/progressBarStyleHorizontal"-->
+        <!--android:layout_width="60dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:progress="0"-->
+        <!--android:id="@+id/pbIO06"-->
+        <!--android:max="1"-->
+        <!--android:progressTint="#00ff00"-->
+        <!--android:progressDrawable="@drawable/green_pb"-->
+        <!--android:layout_below="@+id/IO06"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true" />-->
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        android:text="@string/textIO01"
+        android:id="@+id/IO01"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="15dp"
+        android:layout_marginBottom="15dp"/>
+
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="@string/textIO02"-->
+        <!--android:id="@+id/IO02"-->
+        <!--android:layout_below="@+id/pbIO01"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true"-->
+        <!--android:layout_marginTop="15dp"-->
+        <!--android:layout_marginBottom="15dp" />-->
+
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="@string/textIO03"-->
+        <!--android:id="@+id/IO03"-->
+        <!--android:layout_below="@+id/pbIO02"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true"-->
+        <!--android:layout_marginTop="15dp"-->
+        <!--android:layout_marginBottom="15dp" />-->
+
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="@string/textIO04"-->
+        <!--android:id="@+id/IO04"-->
+        <!--android:layout_below="@+id/pbIO03"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true"-->
+        <!--android:layout_marginTop="15dp"-->
+        <!--android:layout_marginBottom="15dp" />-->
+
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="@string/textIO05"-->
+        <!--android:id="@+id/IO05"-->
+        <!--android:layout_below="@+id/pbIO04"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true"-->
+        <!--android:layout_marginTop="15dp"-->
+        <!--android:layout_marginBottom="15dp" />-->
+
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="@string/textIO06"-->
+        <!--android:id="@+id/IO06"-->
+        <!--android:layout_below="@+id/pbIO05"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true"-->
+        <!--android:layout_marginTop="15dp"-->
+        <!--android:layout_marginBottom="15dp" />-->
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        android:text="0"
+        android:id="@+id/tvIO01"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/IO01"
+        android:layout_marginLeft="25dp"
+        android:layout_marginStart="25dp" />
+
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="0"-->
+        <!--android:id="@+id/tvIO02"-->
+        <!--android:layout_below="@+id/IO02"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true"-->
+        <!--android:layout_marginLeft="25dp"-->
+        <!--android:layout_marginStart="25dp" />-->
+
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="0"-->
+        <!--android:id="@+id/tvIO03"-->
+        <!--android:layout_below="@+id/IO03"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true"-->
+        <!--android:layout_marginLeft="25dp"-->
+        <!--android:layout_marginStart="25dp" />-->
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="0"-->
+        <!--android:id="@+id/tvIO04"-->
+        <!--android:layout_below="@+id/IO04"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true"-->
+        <!--android:layout_marginLeft="25dp"-->
+        <!--android:layout_marginStart="25dp" />-->
+
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="0"-->
+        <!--android:id="@+id/tvIO05"-->
+        <!--android:layout_below="@+id/IO05"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true"-->
+        <!--android:layout_marginLeft="25dp"-->
+        <!--android:layout_marginStart="25dp" />-->
+
+
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="0"-->
+        <!--android:id="@+id/tvIO06"-->
+        <!--android:layout_below="@+id/IO06"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentStart="true"-->
+        <!--android:layout_marginLeft="25dp"-->
+        <!--android:layout_marginStart="25dp" />-->
+
+
+</RelativeLayout>

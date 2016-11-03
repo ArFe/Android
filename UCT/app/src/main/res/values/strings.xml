@@ -165,4 +165,47 @@
     <string name="pref_title_modbus_slave_id">Modbus Slave ID</string>
     <string name="pref_title_number_retries">Number of Retries</string>
     <string name="pref_title_modbus_timeout">Modbus Timeout (ms)</string>
+    <string name="ioTitle">IOs - Node </string>
+    <string name="textIO01">IO01</string>
+    <string name="textIO02">IO02</string>
+    <string name="textIO03">IO03</string>
+    <string name="textIO04">IO04</string>
+    <string name="textIO05">IO05</string>
+    <string name="textIO06">IO06</string>
+    <string name="iosText">IOs</string>
+
+
+    <string name="ble_not_supported">BLE is not supported</string>
+    <string name="label_data">Data:</string>
+    <string name="label_device_address">Device address:</string>
+    <string name="label_state">State:</string>
+    <string name="no_data">No data</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="title_devices">BLE Device Scan</string>
+    <string name="error_bluetooth_not_supported">Bluetooth not supported.</string>
+
+    <string name="unknown_device">Unknown device</string>
+    <string name="unknown_characteristic">Unknown characteristic</string>
+    <string name="unknown_service">Unknown service</string>
+
+    <!-- Menu items -->
+    <string name="menu_connect">Connect</string>
+    <string name="menu_disconnect">Disconnect</string>
+    <string name="menu_scan">Scan</string>
+    <string name="menu_stop">Stop</string>
+    <string name="is_serial">Serial Present:</string>
+    <string-array name="roygbiv">
+        <item>Red</item>
+        <item>Green</item>
+        <item>Blue</item>
+    </string-array>
+    <string name="button">Send</string>
+    <string name="red_slide">Red</string>
+    <string name="blue_slide">Blue</string>
+    <string name="green_slide">Green</string>
+    <string name="text_to_send">Text to send</string>
+    <string name="connect_bt">Connect Bluetooth</string>
+    <string name="title_activity_btscan">BTScanActivity</string>
+
 </resources>

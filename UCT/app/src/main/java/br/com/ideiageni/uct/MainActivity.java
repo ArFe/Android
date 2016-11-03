@@ -5,7 +5,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.hardware.usb.UsbManager;
 import android.net.Uri;
 import android.os.Build;
@@ -13,6 +17,9 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.media.RatingCompat;
+import android.support.v7.graphics.drawable.DrawableWrapper;
 import android.support.v7.widget.AppCompatCheckBox;
 import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.AppCompatTextView;
@@ -29,6 +36,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -39,6 +47,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
+import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -55,8 +64,16 @@ import com.jjoe64.graphview.series.LineGraphSeries;
 
 import java.util.ArrayList;
 
+import static android.widget.RelativeLayout.BELOW;
+import static android.widget.RelativeLayout.RIGHT_OF;
+
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+
+    public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
+    public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
+    public static final int BLUETOOTH = 1;
+    public static final int USB = 2;
 
     private static final int MAX_GRAPH_COUNT = 30 * 60; //30 amostras por minuto, 60 minutos
     private static final String CURRENT_VIEW = "currentView";
@@ -70,7 +87,8 @@ public class MainActivity extends AppCompatActivity
             R.id.lv_valor5, R.id.lv_valor6, R.id.lv_valor7, R.id.lv_valor8, R.id.lv_valor9, R.id.lv_valor10,
             R.id.lv_valor11, R.id.lv_valor12, R.id.lv_valor13, R.id.lv_valor14, R.id.lv_valor15, R.id.lv_valor16};
 
-    public CommClass comm;
+    public USBCommClass usbComm;
+    public BTCommClass btComm;
     private byte mSlave = 1;
     private byte parity = 0;
     private int numRetries = 10;
@@ -88,9 +106,11 @@ public class MainActivity extends AppCompatActivity
     private byte wrNode = 0;
     private byte ssNode = 0;
     private byte vtNode = 0;
+    private byte ioNode = 0;
     private int[] writeReg = new int[numReg];
     private boolean[] isWriteRegEnable = new boolean[numReg];
-    private boolean isSsEnable = false;
+    private boolean isRunning = false;
+    private boolean isIOEnable = false;
     private boolean commConfigChanged = false;
 
     private DX80Adapter arrayAdapter;
@@ -102,12 +122,14 @@ public class MainActivity extends AppCompatActivity
     private boolean wrScreen = false;
     private boolean ssScreen = false;
     private boolean vtScreen = false;
+    private boolean ioScreen = false;
 
     private int appConnect = 0;
     private int appReadReg = 999;
     private int appWriteReg = 999;
     private int appSiteSurvey = 999;
     private int appVibTemp = 999;
+    private int appIO = 999;
     private int mCurrentApp = 0;
     private int mCurrentAppId = R.id.connect;
     private int[] backControlArray= new int[100];
@@ -122,6 +144,25 @@ public class MainActivity extends AppCompatActivity
     private TextView tvGood;
     private TextView tvWeak;
     private TextView tvMissed;
+
+    private int numIOs = 4;
+    private ProgressBar[] pbIOs = new ProgressBar[numIOs];
+    private TextView[] tvIOs = new TextView[numIOs];
+    private Spinner[] spIOs = new Spinner[numIOs];
+
+//    private ProgressBar pbIO01;
+//    private ProgressBar pbIO02;
+//    private ProgressBar pbIO03;
+//    private ProgressBar pbIO04;
+//    private ProgressBar pbIO05;
+//    private ProgressBar pbIO06;
+//
+//    private TextView tvIO01;
+//    private TextView tvIO02;
+//    private TextView tvIO03;
+//    private TextView tvIO04;
+//    private TextView tvIO05;
+//    private TextView tvIO06;
 
     private RadioButton rbAuto;
     private RadioButton rbManual;
@@ -178,17 +219,33 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onClick(View view) {
 
-                if(comm!=null) {
-                    if (comm.getUartConfigured()) {
+                if(usbComm !=null) {
+                    if (usbComm.getUartConfigured()) {
                         control.setRunning(!control.isRunning());
-                        setSsEnable(!isSsEnable());
+                        setRunning(!isRunning());
                         Snackbar.make(view, "Running is " + control.isRunning(), Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null).show();
                     } else {
                     Snackbar.make(view, "Not connected...", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
                     }
-                } else {
+                } else if(btComm !=null) {
+                    if (btComm.isConnected()){
+                        control.setRunning(!control.isRunning());
+                        setRunning(!isRunning());
+                        Snackbar.make(view, "Running is " + control.isRunning(), Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+
+                    } else {
+                        Snackbar.make(view, "Not connected", Snackbar.LENGTH_LONG)
+                                .setAction("Connect", new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        btComm.connect();
+                                    }
+                                }).show();
+                    }
+                }else {
                     Snackbar.make(view, "Not connected...", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
                 }
@@ -216,9 +273,9 @@ public class MainActivity extends AppCompatActivity
                 if (key.equals("baud_rate")||key.equals("parity")) {
                     baudRate = Integer.valueOf(sharedPref.getString("baud_rate", "19200"));
                     parity = Byte.valueOf(sharedPref.getString("parity", "0"));
-                    if(comm != null) {
-                        if (comm.getUartConfigured())comm.SetConfig(baudRate, dataBits, stopBits, parity, flowControl);
-                        else comm.setParms(baudRate, dataBits, stopBits, parity, flowControl);
+                    if(usbComm != null) {
+                        if (usbComm.getUartConfigured()) usbComm.SetConfig(baudRate, dataBits, stopBits, parity, flowControl);
+                        else usbComm.setParms(baudRate, dataBits, stopBits, parity, flowControl);
                     }
                 } else if(key.equals("modbus_slave_id")) {
                     mSlave = Byte.valueOf(sharedPref.getString("modbus_slave_id", "1"));
@@ -252,6 +309,18 @@ public class MainActivity extends AppCompatActivity
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
 
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if(btComm != null) btComm.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if(btComm != null) btComm.onResume();
     }
 
     @Override
@@ -302,9 +371,8 @@ public class MainActivity extends AppCompatActivity
     protected void onDestroy() {
         super.onDestroy();
         control.onStop();
-        if(comm!=null) {
-            comm.disconnectFunction();
-        }
+        if(btComm != null) btComm.onDestroy();
+        if(usbComm !=null) usbComm.disconnectFunction();
         this.unregisterReceiver(mUsbReceiver);
     }
 
@@ -376,6 +444,24 @@ public class MainActivity extends AppCompatActivity
         super.onSaveInstanceState(savedInstanceState);
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        super.onActivityResult(requestCode, resultCode, data);
+        // check if the request code is same as what is passed  here it is Bluetooth
+        Button btnConnectBT = (Button) viewFlipper.getChildAt(appConnect).findViewById(R.id.btConnectBT);
+        if(requestCode==BLUETOOTH && resultCode==RESULT_OK) {
+            String deviceName = data.getStringExtra(EXTRAS_DEVICE_NAME);
+            String deviceAddress = data.getStringExtra(EXTRAS_DEVICE_ADDRESS);
+            String text = "Connected " + deviceName;
+            btnConnectBT.setText(text);
+            btComm = new BTCommClass(this, deviceName,deviceAddress);
+            control.startMaster(BLUETOOTH);
+            control.onStart();
+        } else btnConnectBT.setText(R.string.connect_bt);
+
+    }
+
     // Ajusta a tela de Connect
     public void setCNscreen() {
         final View connect;
@@ -390,7 +476,7 @@ public class MainActivity extends AppCompatActivity
             Button btnConnectUsb = (Button) viewFlipper.getChildAt(appConnect).findViewById(R.id.btConnectUsb);
             if (btnConnectUsb != null) {
                 UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);
-                log.log(manager.getDeviceList().toString());
+                //log.log(manager.getDeviceList().toString());
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                     if(manager.getDeviceList().isEmpty()) {
                         btnConnectUsb.setClickable(false);
@@ -414,21 +500,21 @@ public class MainActivity extends AppCompatActivity
                     public void onClick(View view) {
                         Button btn = (Button) view;
                         if(!connected) {
-                            if (comm == null && usbAttached) {
-                                comm = new CommClass(getApplicationContext());
-                                comm.SetConfig(baudRate, dataBits, stopBits, parity, flowControl);
-                                control.startMaster();
-                                log.log("Comm Class Created");
+                            if (usbComm == null && usbAttached) {
+                                usbComm = new USBCommClass(getApplicationContext());
+                                usbComm.SetConfig(baudRate, dataBits, stopBits, parity, flowControl);
+                                control.startMaster(USB);
+                                log.log("USB Comm Class Created");
                             }
-                            if (comm != null && !comm.getftDevNull()) {
-                                if (!comm.getUartConfigured()) {
-                                    comm.ConfigDev();
+                            if (usbComm != null && !usbComm.getftDevNull()) {
+                                if (!usbComm.getUartConfigured()) {
+                                    usbComm.ConfigDev();
                                     control.onStart();
                                 }
-                                connected = comm.getUartConfigured();
+                                connected = usbComm.getUartConfigured();
                                 if (connected) btn.setText(R.string.disconnect_usb);
                                 else btn.setText(R.string.connect_usb);
-                                log.log("Comm configured " + connected);
+                                log.log("USB Comm configured " + connected);
                             } else {
                                 btn.setClickable(false);
                                 btn.setText(R.string.connect_usb);
@@ -438,13 +524,27 @@ public class MainActivity extends AppCompatActivity
                             connected = false;
                             btn.setText(R.string.connect_usb);
                             control.onStop();
-                            if(comm!=null) {
-                                comm.disconnectFunction();
+                            if(usbComm !=null) {
+                                usbComm.disconnectFunction();
                             }
                         }
                     }
                 });
             }
+
+            Button btnConnectBT = (Button) viewFlipper.getChildAt(appConnect).findViewById(R.id.btConnectBT);
+            if (btnConnectBT != null) {
+                UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);
+                btnConnectBT.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        Button btn = (Button) view;
+                        Intent intent = new Intent(getApplicationContext(), BTScanActivity.class);
+                        startActivityForResult(intent, BLUETOOTH);
+                    }
+                });
+            }
+
             cnScreen = true;
         }
     }
@@ -837,6 +937,130 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    // Ajusta a tela de Site Survey
+    public void setIOscreen() {
+        // Se tela Site Survey não está ajustada
+        if (!ioScreen) {
+            LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+            View IOs = inflater.inflate(R.layout.content_ios, viewFlipper, false);
+            appIO = viewFlipper.getChildCount();
+            viewFlipper.addView(IOs, appIO);
+
+//            TextView labelIO01 = (TextView) viewFlipper.getChildAt(appIO).findViewById(R.id.IO01);
+            TextView[] labelIOs = new TextView[numIOs];
+
+            RelativeLayout rl = (RelativeLayout) viewFlipper.getChildAt(appIO).findViewById(R.id.iosView);
+
+//            pbIO01 = (ProgressBar) viewFlipper.getChildAt(appIO).findViewById(R.id.pbIO01);
+//            pbIO02 = (ProgressBar) viewFlipper.getChildAt(appIO).findViewById(R.id.pbIO02);
+//            pbIO03 = (ProgressBar) viewFlipper.getChildAt(appIO).findViewById(R.id.pbIO03);
+//            pbIO04 = (ProgressBar) viewFlipper.getChildAt(appIO).findViewById(R.id.pbIO04);
+//            pbIO05 = (ProgressBar) viewFlipper.getChildAt(appIO).findViewById(R.id.pbIO05);
+//            pbIO06 = (ProgressBar) viewFlipper.getChildAt(appIO).findViewById(R.id.pbIO06);
+//
+//            tvIO01 = (TextView) viewFlipper.getChildAt(appIO).findViewById(R.id.tvIO01);
+//            tvIO02 = (TextView) viewFlipper.getChildAt(appIO).findViewById(R.id.tvIO02);
+//            tvIO03 = (TextView) viewFlipper.getChildAt(appIO).findViewById(R.id.tvIO03);
+//            tvIO04 = (TextView) viewFlipper.getChildAt(appIO).findViewById(R.id.tvIO04);
+//            tvIO05 = (TextView) viewFlipper.getChildAt(appIO).findViewById(R.id.tvIO05);
+//            tvIO06 = (TextView) viewFlipper.getChildAt(appIO).findViewById(R.id.tvIO06);
+//
+            RelativeLayout.LayoutParams[] labelLP = new RelativeLayout.LayoutParams[numIOs];
+            RelativeLayout.LayoutParams[] tvLP = new RelativeLayout.LayoutParams[numIOs];
+            RelativeLayout.LayoutParams[] pbLP = new RelativeLayout.LayoutParams[numIOs];
+            RelativeLayout.LayoutParams[] spLP = new RelativeLayout.LayoutParams[numIOs];
+            ArrayList<String>[] IOtypes = new ArrayList[numIOs];
+
+            for (int i = 0; i <numIOs; i++) {
+                labelLP[i] = new RelativeLayout.LayoutParams (
+                        RelativeLayout.LayoutParams.WRAP_CONTENT,
+                        RelativeLayout.LayoutParams.WRAP_CONTENT);
+                tvLP[i] = new RelativeLayout.LayoutParams (
+                        RelativeLayout.LayoutParams.WRAP_CONTENT,
+                        RelativeLayout.LayoutParams.WRAP_CONTENT);
+                pbLP[i] = new RelativeLayout.LayoutParams(
+                        120,
+                        RelativeLayout.LayoutParams.WRAP_CONTENT);
+                spLP[i] = new RelativeLayout.LayoutParams (
+                        RelativeLayout.LayoutParams.WRAP_CONTENT,
+                        RelativeLayout.LayoutParams.WRAP_CONTENT);
+
+                labelIOs[i] = new TextView(this);
+                spIOs[i] = new Spinner(this);
+                tvIOs[i] = new TextView(this);
+                pbIOs[i] = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+                pbIOs[i].setProgressDrawable(ContextCompat.getDrawable(getApplicationContext(),R.drawable.green_pb));
+                labelIOs[i].setId(i+100);
+                tvIOs[i].setId(i+200);
+                pbIOs[i].setId(i+300);
+
+                if(i==0) {
+                    labelLP[i].addRule(BELOW, R.id.tvIOs);
+                    spLP[i].addRule(BELOW, R.id.tvIOs);
+                } else {
+                    labelLP[i].addRule(BELOW, tvIOs[i-1].getId());
+                    spLP[i].addRule(BELOW, tvIOs[i-1].getId());
+                }
+                labelLP[i].setMargins(15, 15, 0, 15);
+                spLP[i].setMargins(15, 15, 0, 15);
+                spLP[i].addRule(RIGHT_OF, labelIOs[i].getId());
+
+                tvLP[i].addRule(BELOW, labelIOs[i].getId());
+                tvLP[i].setMargins(15, 15, 0, 15);
+                pbLP[i].addRule(BELOW, labelIOs[i].getId());
+                pbLP[i].setMargins(0, 15, 0, 15);
+
+                labelIOs[i].setLayoutParams(labelLP[i]);
+                spIOs[i].setLayoutParams(spLP[i]);
+                tvIOs[i].setLayoutParams(tvLP[i]);
+                pbIOs[i].setLayoutParams(pbLP[i]);
+
+                rl.addView(labelIOs[i]);
+                rl.addView(spIOs[i]);
+                rl.addView(pbIOs[i]);
+                rl.addView(tvIOs[i]);
+
+                labelIOs[i].setText("IO " + (i+1));
+                tvIOs[i].setText("0");
+                pbIOs[i].setScaleY(2f);
+                pbIOs[i].setProgress(0);
+                pbIOs[i].setMax(1);
+
+                IOtypes[i] = new ArrayList<>();
+                for (int j = 1; j <= numNodes; j++) IOtypes[i].add(String.valueOf(j));
+                ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.io_spinner, IOtypes[i]); //selected item will look like a spinner set from XML
+                spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spIOs[i].setAdapter(spinnerArrayAdapter);
+            }
+
+            ArrayList<String> nodeNums = new ArrayList<>();
+            nodeNums.add("GW");
+            for (int i = 1; i <= numNodes; i++) nodeNums.add(String.valueOf(i));
+            Spinner spNode = (Spinner) viewFlipper.getChildAt(appIO).findViewById(R.id.nodeNumIO);
+            ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.my_spinner, nodeNums); //selected item will look like a spinner set from XML
+            spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spNode.setAdapter(spinnerArrayAdapter);
+
+            spNode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> adapter, View v, int position, long arg3) {
+                    setIONode(Byte.parseByte(String.valueOf(position)));
+//                    setIONode(Byte.parseByte((String) adapter.getItemAtPosition(position)));
+                    Snackbar.make(coordinatorLayoutView, "IOs node: " + getIONode(), Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parentView) {
+                    // your code here
+                }
+            });
+
+            ioScreen = true;
+        }
+    }
+
     public void updateRRScreen () {
         //for(int i=0;i<numNodes;i++) nodes[i].setValues(Arrays.copyOfRange(modbusArray,i*16+1,(i+1)*16));
     }
@@ -886,6 +1110,15 @@ public class MainActivity extends AppCompatActivity
         log.log("Count=" + graphCnt + " Vib=" + vibmm + " Temp=" + tempmm);
     }
 
+    public void updateIOScreen (){
+        int[] data = slave1.getHR(ioNode*numReg,numReg);
+
+        for(int i=0; i<numIOs; i++){
+            pbIOs[i].setProgress(data[i]);
+            tvIOs[i].setText(String.valueOf(data[i]));
+        }
+    }
+
     public void setCurrentApp(int currentAppId, boolean back) {
         int currentApp = 0;
         mCurrentAppId = currentAppId;
@@ -904,6 +1137,9 @@ public class MainActivity extends AppCompatActivity
         } else if (currentAppId == R.id.vibTemp) {
             if (!vtScreen) setVTscreen();
             currentApp = appVibTemp;
+        } else if (currentAppId == R.id.io) {
+            if (!ioScreen) setIOscreen();
+            currentApp = appIO;
         }
 
         if(!back) {
@@ -914,7 +1150,7 @@ public class MainActivity extends AppCompatActivity
 
         viewFlipper.setDisplayedChild(this.mCurrentApp);
         control.setCurrentApp(this.mCurrentApp);
-        setSsEnable(false);
+        setRunning(false);
 
         if (currentApp == appConnect) fab.hide();
         else fab.show();
@@ -988,6 +1224,14 @@ public class MainActivity extends AppCompatActivity
         this.appVibTemp = app;
     }
 
+    public int getAppIO() {
+        return appIO;
+    }
+
+    public void setAppIO(int app) {
+        this.appIO = app;
+    }
+
     public int getNumNodes() {
         return numNodes;
     }
@@ -1020,6 +1264,14 @@ public class MainActivity extends AppCompatActivity
         this.vtNode = node;
     }
 
+    public byte getIONode() {
+        return ioNode;
+    }
+
+    public void setIONode(byte node) {
+        this.ioNode = node;
+    }
+
     public void notifyDataSetChanged () {
         if(getCurrentApp() == appReadReg) arrayAdapter.notifyDataSetChanged();
         else if(getCurrentApp() == appVibTemp) updateVTScreen();
@@ -1042,12 +1294,12 @@ public class MainActivity extends AppCompatActivity
         this.writeReg[index] = writeReg;
     }
 
-    public boolean isSsEnable() {
-        return isSsEnable;
+    public boolean isRunning() {
+        return isRunning;
     }
 
-    public void setSsEnable(boolean ssEnable) {
-        isSsEnable = ssEnable;
+    public void setRunning(boolean running) {
+        isRunning = running;
     }
 
     public void keepScreenOn(){getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);}
@@ -1082,8 +1334,8 @@ public class MainActivity extends AppCompatActivity
                     btnConnectUsb.setEnabled(false);
                 }
                 control.onStop();
-                if(comm!=null) {
-                    comm.disconnectFunction();
+                if(usbComm !=null) {
+                    usbComm.disconnectFunction();
                 }
             } else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 log.log("Attached");
